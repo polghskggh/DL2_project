@@ -1,4 +1,5 @@
 SAVE_DIR: ./save/cifar10/bn-wrn-28-10
+DATA_DIR: ./save/cifar10/data
 MODEL:
   ADAPTATION: tent
   ARCH: WRN2810_BN
