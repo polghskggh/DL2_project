@@ -1,4 +1,4 @@
-from eeg_otta.tta import Norm, OnlineAlignment, EntropyMinimization
+from eeg_otta.tta import Norm, OnlineAlignment, EntropyMinimization, EnergyAdaptation, NoAdaptation
 
 
 def get_tta_cls(tta_method: str):
@@ -8,5 +8,9 @@ def get_tta_cls(tta_method: str):
         return Norm
     elif tta_method == "entropy_minimization":
         return EntropyMinimization
+    elif tta_method == "energy_adaptation":
+        return EnergyAdaptation
+    elif tta_method == "no_adaptation":
+        return NoAdaptation
     else:
         raise NotImplementedError
