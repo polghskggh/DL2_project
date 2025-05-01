@@ -14,14 +14,16 @@ from utils.seed import seed_everything
 
 CHECKPOINT_PATH = os.path.join(Path(__file__).resolve().parents[1], "checkpoints")
 CONFIG_DIR = os.path.join(Path(__file__).resolve().parents[1], "configs")
-DEFAULT_CONFIG = "tta_entropy_minimization.yaml"
+DEFAULT_CONFIG = "tta_energy.yaml"
 
 
 def run_adaptation(config):
     # load source config
     with open(os.path.join(CHECKPOINT_PATH, config["source_run"], "config.yaml")) as f:
         source_config = yaml.safe_load(f)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("mps" if torch.backends.mps.is_available()
+                          else "cuda" if torch.cuda.is_available()
+                          else "cpu")
 
     datamodule_cls = get_datamodule_cls(source_config["dataset_name"])
     model_cls = BaseNet
@@ -33,7 +35,9 @@ def run_adaptation(config):
         subject_ids = [source_config["subject_ids"]]
 
     source_config["preprocessing"]["alignment"] = False
-    source_config["preprocessing"]["batch_size"] = 1
+
+    if config["online"]:
+        source_config["preprocessing"]["batch_size"] = 1
     datamodule = datamodule_cls(source_config["preprocessing"], subject_ids=subject_ids)
 
     cal_accs, test_accs = [], []
@@ -71,10 +75,13 @@ if __name__ == "__main__":
     # parse arguments
     parser = ArgumentParser()
     parser.add_argument("--config", default=DEFAULT_CONFIG)
+    parser.add_argument("--online", default=False, action="store_true")
     args = parser.parse_args()
 
     # load config
     with open(os.path.join(CONFIG_DIR, args.config)) as f:
         config = yaml.safe_load(f)
+
+    config["online"] = args.online
 
     run_adaptation(config)
