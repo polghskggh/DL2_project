@@ -65,7 +65,7 @@ def run_adaptation(config):
 
         acc = get_accuracy(model, datamodule.test_dataloader(), device)
         test_accs.append(acc)
-        test_acc_logs[subject_id] = acc
+        test_acc_logs[subject_id] = float(acc.item())
         print(f"test_acc subject {subject_id}: {100 *test_accs[-1]:.2f}%")
 
     # print overall test accuracy
