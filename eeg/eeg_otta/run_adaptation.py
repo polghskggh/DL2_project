@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import yaml
+import json
 
 from models import BaseNet
 from utils.get_accuracy import get_accuracy
@@ -41,6 +42,7 @@ def run_adaptation(config):
     datamodule = datamodule_cls(source_config["preprocessing"], subject_ids=subject_ids)
 
     cal_accs, test_accs = [], []
+    test_acc_logs = {}
     for version, subject_id in enumerate(subject_ids):
         seed_everything(source_config["seed"])
 
@@ -63,6 +65,7 @@ def run_adaptation(config):
 
         acc = get_accuracy(model, datamodule.test_dataloader(), device)
         test_accs.append(acc)
+        test_acc_logs[subject_id] = acc
         print(f"test_acc subject {subject_id}: {100 *test_accs[-1]:.2f}%")
 
     # print overall test accuracy
@@ -70,6 +73,8 @@ def run_adaptation(config):
         print(f"cal_acc: {100 * np.mean(cal_accs):.2f}")
     print(f"test_acc: {100 * np.mean(test_accs):.2f}")
 
+    with open(f'./logs/{config["source_run"]}_{config["tta_method"]}_accuracy.json', 'w') as f:
+        json.dump(test_acc_logs, f)
 
 if __name__ == "__main__":
     # parse arguments
