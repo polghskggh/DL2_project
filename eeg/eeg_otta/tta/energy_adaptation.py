@@ -69,11 +69,8 @@ class EnergyAdaptation(TTAMethod):
         # generate initial samples and buffer inds of those samples (if buffer is used)
         init_sample, buffer_inds = self._sample_p_0(reinit_freq=reinit_freq, replay_buffer=self.replay_buffer, bs=bs, series_length=series_length, n_channels=n_channels, device=device ,y=y)
         init_samples = deepcopy(init_sample)
-        x_k = torch.autograd.Variable(init_sample, requires_grad=True)
+        x_k = torch.autograd.Variable(init_sample, requires_grad=True).to(self.device)
         # sgld
-        print(f'model device : {next(self.energy_model.parameters()).device}')
-        print(f'x device : {x_k.device}')
-        print(f'y device: {y.device}')
 
         for k in range(n_steps):
             f_prime = torch.autograd.grad(self.energy_model(x_k, y=y)[0].sum(), [x_k], retain_graph=True)[0]
