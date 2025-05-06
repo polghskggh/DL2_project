@@ -80,7 +80,7 @@ if __name__ == "__main__":
     # parse arguments
     parser = ArgumentParser()
     parser.add_argument("--config", default=DEFAULT_CONFIG)
-    parser.add_argument("--online", default=True, action="store_true")
+    parser.add_argument("--online", default=False, action="store_true")
     args = parser.parse_args()
 
     # load config

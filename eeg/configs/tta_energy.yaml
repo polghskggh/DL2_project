@@ -8,6 +8,6 @@ tta_config:
   buffer_length: 32
   optimizer: "Adam"
   optimizer_kwargs:
-    lr: 0.0005
+    lr: 0.005
     beta: 0.9
     weight_decay: 0.0
