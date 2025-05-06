@@ -43,7 +43,7 @@ class EnergyAdaptation(TTAMethod):
     
     @staticmethod
     def init_random(bs, series_length=1000, n_channels=22):
-        return torch.FloatTensor(bs, n_channels, series_length).uniform_(-1, 1)
+        return torch.normal(0, 0.0363, size=(bs, n_channels, series_length))
 
     @staticmethod
     def _sample_p_0(reinit_freq, replay_buffer, bs, series_length, n_channels, device, y=None):
@@ -83,7 +83,7 @@ class EnergyAdaptation(TTAMethod):
         return final_samples, init_samples.detach()
     
     @torch.enable_grad()  # ensure grads in possible no grad context for testing
-    def forward_and_adapt(self, x, sgld_steps=20, sgld_lr=0.1, sgld_std=0.01, reinit_freq=0.05):
+    def forward_and_adapt(self, x, sgld_steps=100, sgld_lr=0.5, sgld_std=0.001, reinit_freq=0.05):
         """Forward and adapt model on batch of data.
         Measure entropy of the model prediction, take gradients, and update params.
         """
@@ -99,21 +99,20 @@ class EnergyAdaptation(TTAMethod):
         series_length = x.shape[2]
         device = x.device
 
-        for i in range(20):
-            x_fake, _ = self.sample_q(n_steps=sgld_steps, sgld_lr=sgld_lr, sgld_std=sgld_std, reinit_freq=reinit_freq,
-                                batch_size=batch_size, series_length=series_length, n_channels=n_channels, device=device, y=None)
+        x_fake, _ = self.sample_q(n_steps=sgld_steps, sgld_lr=sgld_lr, sgld_std=sgld_std, reinit_freq=reinit_freq,
+                            batch_size=batch_size, series_length=series_length, n_channels=n_channels, device=device, y=None)
 
-            # forward
-            out_real = self.energy_model(x)
-            energy_real = out_real[0].mean()
-            energy_fake = self.energy_model(x_fake)[0].mean()
+        # forward
+        out_real = self.energy_model(x)
+        energy_real = out_real[0].mean()
+        energy_fake = self.energy_model(x_fake)[0].mean()
 
-            # adapt
-            self.optimizer.zero_grad()
-            loss = energy_real - energy_fake
-            loss.backward()
-            self.optimizer.step()
-            outputs = self.energy_model.classify(x)
+        # adapt
+        self.optimizer.zero_grad()
+        loss = energy_real - energy_fake
+        loss.backward()
+        self.optimizer.step()
+        outputs = self.energy_model.classify(x)
 
         return outputs
 
