@@ -25,11 +25,39 @@ class EnergyModel(nn.Module):
             return -torch.gather(logits, 1, y[:, None]), logits
 
 
+
+def rbf_kernel(x, y, length=10, scale=1):
+    return (scale ** 2) * torch.exp(-((x - y) ** 2) / (2 * length ** 2))
+
+
 class EnergyAdaptation(TTAMethod):
     def __init__(self, model: nn.Module, config: dict, info: mne.Info):
         super(EnergyAdaptation, self).__init__(model, config, info)
         self.energy_model = EnergyModel(model)
         self.replay_buffer = []
+        
+        self._init_langevin_initial_dist(
+            **config.get("langevin_init", dict(series_length=1000))
+        )
+        
+    def _init_langevin_initial_dist(self, series_length, kernel=None, length=10, scale=0.03):
+        if kernel is None:
+            self.langevin_initial_dist = torch.distributions.MultivariateNormal(
+                loc=torch.zeros(series_length), covariance_matrix=torch.eye(series_length) * (scale ** 2)
+            )
+            return
+        
+        t = torch.arange(series_length)
+        if kernel == "rbf":
+            cov = rbf_kernel(t[:, None], t[None, :], length=length, scale=scale)
+        else:
+            raise ValueError(f"Unknown kernel: {kernel}")
+        
+        eps = 1e-6
+        cov = cov + torch.eye(series_length) * eps
+        self.langevin_initial_dist = torch.distributions.MultivariateNormal(
+            loc=torch.zeros(series_length), covariance_matrix=cov
+        )
 
     def forward_sliding_window(self, x):
         if self.config.get("alignment", False):
@@ -41,19 +69,17 @@ class EnergyAdaptation(TTAMethod):
         outputs = self.model(x)
         return outputs
     
-    @staticmethod
-    def init_random(bs, series_length=1000, n_channels=22):
-        return torch.normal(0, 0.0363, size=(bs, n_channels, series_length))
+    def init_random(self, bs, n_channels):
+        return self.langevin_initial_dist.sample((bs, n_channels))
 
-    @staticmethod
-    def _sample_p_0(reinit_freq, replay_buffer, bs, series_length, n_channels, device, y=None):
-        if len(replay_buffer) == 0:
-            return EnergyAdaptation.init_random(bs, series_length=series_length, n_channels=n_channels), []
-        buffer_size = len(replay_buffer)
+    def _sample_p_0(self, reinit_freq, bs, series_length, n_channels, device, y=None):
+        if len(self.replay_buffer) == 0:
+            return self.init_random(bs, n_channels=n_channels), []
+        buffer_size = len(self.replay_buffer)
         inds = torch.randint(0, buffer_size, (bs,))
         # if cond, convert inds to class conditional inds
 
-        buffer_samples = replay_buffer[inds]
+        buffer_samples = self.replay_buffer[inds]
         random_samples = EnergyAdaptation.init_random(bs, series_length=series_length, n_channels=n_channels)
         choose_random = (torch.rand(bs) < reinit_freq).float()[:, None, None, None]
         samples = choose_random * random_samples + (1 - choose_random) * buffer_samples
@@ -67,7 +93,7 @@ class EnergyAdaptation(TTAMethod):
         # get batch size
         bs = batch_size if y is None else y.size(0)
         # generate initial samples and buffer inds of those samples (if buffer is used)
-        init_sample, buffer_inds = self._sample_p_0(reinit_freq=reinit_freq, replay_buffer=self.replay_buffer, bs=bs, series_length=series_length, n_channels=n_channels, device=device ,y=y)
+        init_sample, buffer_inds = self._sample_p_0(reinit_freq=reinit_freq, bs=bs, series_length=series_length, n_channels=n_channels, device=device ,y=y)
         init_samples = deepcopy(init_sample)
         x_k = torch.autograd.Variable(init_sample, requires_grad=True).to(self.device)
         # sgld
