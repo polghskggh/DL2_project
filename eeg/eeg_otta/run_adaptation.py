@@ -82,7 +82,7 @@ def run_adaptation(config):
 def tune(config):
     def objective(trial):
         hyperparams = {
-            'sgld_steps': trial.suggest_int("sgld_steps", 100, 50),
+            'sgld_steps': trial.suggest_int("sgld_steps", 5, 200),
             'sgld_lr': trial.suggest_float("sgld_lr", 1e-5, 1, log=True),
             'sgld_std': trial.suggest_float("sgld_std", 1e-5, 1),
             'reinit_freq': trial.suggest_float("reinit_freq", 1e-5, 1),
@@ -104,6 +104,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--config", default=DEFAULT_CONFIG)
     parser.add_argument("--online", default=True, action="store_true")
+    parser.add_argument("--tune", default=True, action="store_true")
     args = parser.parse_args()
 
     # load config
@@ -111,5 +112,7 @@ if __name__ == "__main__":
         config = yaml.safe_load(f)
 
     config["online"] = args.online
-
-    run_adaptation(config)
+    if args.tune:
+        tune(config)
+    else:
+        run_adaptation(config)
