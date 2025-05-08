@@ -99,21 +99,20 @@ class EnergyAdaptation(TTAMethod):
         series_length = x.shape[2]
         device = x.device
 
-        for i in range(10):
-            x_fake, _ = self.sample_q(n_steps=sgld_steps, sgld_lr=sgld_lr, sgld_std=sgld_std, reinit_freq=reinit_freq,
-                                batch_size=batch_size, series_length=series_length, n_channels=n_channels, device=device, y=None)
+        x_fake, _ = self.sample_q(n_steps=sgld_steps, sgld_lr=sgld_lr, sgld_std=sgld_std, reinit_freq=reinit_freq,
+                            batch_size=batch_size, series_length=series_length, n_channels=n_channels, device=device, y=None)
 
-            # forward
-            out_real = self.energy_model(x)
-            energy_real = out_real[0].mean()
-            energy_fake = self.energy_model(x_fake)[0].mean()
+        # forward
+        out_real = self.energy_model(x)
+        energy_real = out_real[0].mean()
+        energy_fake = self.energy_model(x_fake)[0].mean()
 
-            # adapt
-            self.optimizer.zero_grad()
-            loss = energy_real - energy_fake
-            loss.backward()
-            self.optimizer.step()
-            outputs = self.energy_model.classify(x)
+        # adapt
+        self.optimizer.zero_grad()
+        loss = energy_real - energy_fake
+        loss.backward()
+        self.optimizer.step()
+        outputs = self.energy_model.classify(x)
 
         return outputs
 
