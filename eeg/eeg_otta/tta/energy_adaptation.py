@@ -50,6 +50,14 @@ class EnergyAdaptation(TTAMethod):
         t = torch.arange(series_length)
         if kernel == "rbf":
             cov = rbf_kernel(t[:, None], t[None, :], length=length, scale=scale)
+        # elif kernel == "rbf_left":
+        #     cov = rbf_kernel(t[:, None], t[None, :], length=length, scale=scale)
+        #     torch.tril(cov)
+        #     cov *= torch.eye(series_length) * 0.5
+            
+        #     U, S, Vh = torch.linalg.svd(cov)
+        #     cov_root = U @ torch.diag(S.sqrt()) @ Vh
+        #     self.transform = cov_root
         else:
             raise ValueError(f"Unknown kernel: {kernel}")
         
@@ -71,6 +79,7 @@ class EnergyAdaptation(TTAMethod):
     
     def init_random(self, bs, n_channels):
         return self.langevin_initial_dist.sample((bs, n_channels))
+        # return torch.randn((bs, n_channels, 1000)) @ self.transform.T
 
     def _sample_p_0(self, reinit_freq, bs, series_length, n_channels, device, y=None):
         if len(self.replay_buffer) == 0:
@@ -99,7 +108,7 @@ class EnergyAdaptation(TTAMethod):
         # sgld
 
         for k in range(n_steps):
-            f_prime = torch.autograd.grad(self.energy_model(x_k, y=y)[0].sum(), [x_k], retain_graph=True)[0]
+            f_prime = -torch.autograd.grad(self.energy_model(x_k, y=y)[0].sum(), [x_k], retain_graph=True)[0]
             x_k.data += sgld_lr * f_prime + sgld_std * torch.randn_like(x_k)
         # self.energy_model.train()
         final_samples = x_k.detach()
