@@ -30,6 +30,10 @@ class EnergyAdaptation(TTAMethod):
         super(EnergyAdaptation, self).__init__(model, config, info)
         self.energy_model = EnergyModel(model)
         self.replay_buffer = []
+        self.sgld_lr = config['hyperparams']["sgld_lr"]
+        self.sgld_std = config['hyperparams']["sgld_lr"]
+        self.sgld_steps = config['hyperparams']['sgld_steps']
+        self.reinit_freq = config['hyperparams']['reinit_freq']
 
     def forward_sliding_window(self, x):
         if self.config.get("alignment", False):
@@ -74,7 +78,7 @@ class EnergyAdaptation(TTAMethod):
 
         for k in range(n_steps):
             f_prime = torch.autograd.grad(self.energy_model(x_k, y=y)[0].sum(), [x_k], retain_graph=True)[0]
-            x_k.data += sgld_lr * f_prime + sgld_std * torch.randn_like(x_k)
+            x_k.data -= sgld_lr * f_prime + sgld_std * torch.randn_like(x_k)
         # self.energy_model.train()
         final_samples = x_k.detach()
         # update replay buffer
@@ -87,6 +91,11 @@ class EnergyAdaptation(TTAMethod):
         """Forward and adapt model on batch of data.
         Measure entropy of the model prediction, take gradients, and update params.
         """
+        sgld_lr = self.sgld_lr
+        sgld_std = self.sgld_std
+        sgld_steps = self.sgld_steps
+        reinit_freq = self.reinit_freq
+
         if self.config.get("alignment", False):
             # align data
             x = OnlineAlignment.align_data(
@@ -94,7 +103,7 @@ class EnergyAdaptation(TTAMethod):
                 self.config.get("averaging_method", "equal"),
                 self.config.get("align_alpha", None))
         
-        batch_size=x.shape[0]
+        batch_size = x.shape[0]
         n_channels = x.shape[1]
         series_length = x.shape[2]
         device = x.device
@@ -126,3 +135,5 @@ class EnergyAdaptation(TTAMethod):
                 m.track_running_stats = False
                 m.running_mean = None
                 m.running_var = None
+            else:
+                m.requires_grad_(False)

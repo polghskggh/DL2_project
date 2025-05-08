@@ -17,6 +17,7 @@ CHECKPOINT_PATH = os.path.join(Path(__file__).resolve().parents[1], "checkpoints
 CONFIG_DIR = os.path.join(Path(__file__).resolve().parents[1], "configs")
 DEFAULT_CONFIG = "tta_energy.yaml"
 
+import optuna
 
 def run_adaptation(config):
     # load source config
@@ -66,7 +67,7 @@ def run_adaptation(config):
         acc = get_accuracy(model, datamodule.test_dataloader(), device)
         test_accs.append(acc)
         test_acc_logs[subject_id] = float(acc.item())
-        print(f"test_acc subject {subject_id}: {100 *test_accs[-1]:.2f}%")
+        print(f" test_acc subject {subject_id}: {100 *test_accs[-1]:.2f}%")
 
     # print overall test accuracy
     if config.get("continual", False):
@@ -75,6 +76,28 @@ def run_adaptation(config):
 
     with open(f'./logs/{config["source_run"]}_{config["tta_method"]}_accuracy.json', 'w') as f:
         json.dump(test_acc_logs, f)
+
+    return np.mean(test_accs)
+
+def tune(config):
+    def objective(trial):
+        hyperparams = {
+            'sgld_steps': trial.suggest_int("sgld_steps", 100, 50),
+            'sgld_lr': trial.suggest_float("sgld_lr", 1e-5, 1, log=True),
+            'sgld_std': trial.suggest_float("sgld_std", 1e-5, 1),
+            'reinit_freq': trial.suggest_float("reinit_freq", 1e-5, 1),
+        }
+        config['hyperparams'] = hyperparams
+        return run_adaptation(config)
+
+    # Define the local SQLite database file
+    storage_url = "sqlite:///tea.db"
+    study_name = "tea_eeg"
+    # Create or load an existing study
+    study = optuna.create_study(storage=storage_url, study_name=study_name, direction="maximize",
+                                load_if_exists=True)
+    study.optimize(objective, n_trials=1000)
+
 
 if __name__ == "__main__":
     # parse arguments
