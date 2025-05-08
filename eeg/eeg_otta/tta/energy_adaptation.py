@@ -30,6 +30,7 @@ class EnergyAdaptation(TTAMethod):
         super(EnergyAdaptation, self).__init__(model, config, info)
         self.energy_model = EnergyModel(model)
         self.replay_buffer = []
+        print(config.keys())
         self.sgld_lr = config['hyperparams']["sgld_lr"]
         self.sgld_std = config['hyperparams']["sgld_lr"]
         self.sgld_steps = config['hyperparams']['sgld_steps']
