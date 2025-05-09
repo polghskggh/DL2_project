@@ -21,7 +21,7 @@ class TTAMethod(nn.Module):
         self.optimizer = self.setup_optimizer() if len(self.params) > 0 else None
         self.print_amount_trainable_params()
 
-    def forward(self, x):
+    def forward(self, x, *args):
 
         if x.shape[0] == 1:  # Only single-sample test-time adaptation allowed
             # add sample to buffer, replace the oldest sample if buffer is full

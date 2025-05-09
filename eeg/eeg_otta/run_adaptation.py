@@ -62,6 +62,7 @@ def calculate_accuracy(model_cls, tta_cls, datamodule, config):
 
         # set subject_id
         datamodule.subject_id = subject_id
+        config['tta_config']['subject_id'] = subject_id
         datamodule.prepare_data()
         datamodule.setup()
 
@@ -80,6 +81,16 @@ def calculate_accuracy(model_cls, tta_cls, datamodule, config):
 
 def run_adaptation(config):
     config = load_config(config)
+
+    hyperparams = {
+        'sgld_steps': 20,
+        'sgld_lr': 0.1,
+        'sgld_std': 0.01,
+        'reinit_freq': 0.05,
+        'adaptation_steps': 20,
+    }
+
+    config['tta_config']['hyperparams'] = hyperparams
     model_cls, tta_cls, datamodule = setup(config)
     test_accs, test_acc_logs = calculate_accuracy(model_cls, tta_cls, datamodule, config)
     # print overall test accuracy
@@ -95,6 +106,7 @@ def tune(config):
             'sgld_lr': trial.suggest_float("sgld_lr", 1e-5, 1, log=True),
             'sgld_std': trial.suggest_float("sgld_std", 1e-5, 1),
             'reinit_freq': trial.suggest_float("reinit_freq", 1e-5, 1),
+            'adaptation_steps': trial.suggest_int("adaptation_steps", 1, 20),
         }
         config_local = load_config(config)
 
@@ -117,8 +129,8 @@ if __name__ == "__main__":
     # parse arguments
     parser = ArgumentParser()
     parser.add_argument("--config", default=DEFAULT_CONFIG)
-    parser.add_argument("--online", default=True, action="store_true")
-    parser.add_argument("--tune", default=True, action="store_true")
+    parser.add_argument("--online", default=False, action="store_true")
+    parser.add_argument("--tune", default=False, action="store_true")
     args = parser.parse_args()
 
     # load config
