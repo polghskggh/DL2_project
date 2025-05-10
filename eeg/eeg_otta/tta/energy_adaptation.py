@@ -36,7 +36,7 @@ class EnergyAdaptation(TTAMethod):
         self.hyperparams = config['hyperparams']
         self.subject_id = config['subject_id']
         self.batch = 0
-        self.csv_file = f'logged_data_batch_adaptation.csv'
+        self.csv_file = f'logged_data_adapt_per_batch.csv'
         self.adapt_per_batch = config['adapt_per_batch']
         header = ['subject_id', 'batch', 'adaptation_step', 'loss', 'energy', 'accuracy']
         if self.subject_id == 1:
@@ -104,7 +104,7 @@ class EnergyAdaptation(TTAMethod):
         """
 
         if self.adapt_per_batch :
-            initial_state_dict = deepcopy(self.state_dict())
+            initial_state_dict = deepcopy(self.energy_model.state_dict())
 
         if self.config.get("alignment", False):
             # align data
@@ -147,7 +147,7 @@ class EnergyAdaptation(TTAMethod):
         self.batch += 1
 
         if self.adapt_per_batch :
-            self.load_state_dict(initial_state_dict)
+            self.energy_model.load_state_dict(initial_state_dict)
 
         return outputs
 
