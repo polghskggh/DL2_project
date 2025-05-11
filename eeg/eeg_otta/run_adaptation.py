@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import yaml
 import json
+from pprint import pprint
 
 from models import BaseNet
 from utils.get_accuracy import get_accuracy
@@ -18,7 +19,7 @@ CONFIG_DIR = os.path.join(Path(__file__).resolve().parents[1], "configs")
 DEFAULT_CONFIG = "tta_energy.yaml"
 
 
-def run_adaptation(config):
+def run_adaptation(config, args):
     # load source config
     with open(os.path.join(CHECKPOINT_PATH, config["source_run"], "config.yaml")) as f:
         source_config = yaml.safe_load(f)
@@ -35,7 +36,8 @@ def run_adaptation(config):
     else:
         subject_ids = [source_config["subject_ids"]]
 
-    source_config["preprocessing"]["alignment"] = False
+    if not args.align:
+        source_config["preprocessing"]["alignment"] = False
 
     if config["online"]:
         source_config["preprocessing"]["batch_size"] = 1
@@ -50,28 +52,47 @@ def run_adaptation(config):
         ckpt_path = os.path.join(CHECKPOINT_PATH, config["source_run"], str(subject_id),
                                  "model-v1.ckpt")
         model = model_cls.load_from_checkpoint(ckpt_path, map_location=device)
+        model.eval()
+        for nm, m in model.named_modules():
+            if isinstance(m, torch.nn.BatchNorm2d):
+                # force use of batch stats in train and eval modes
+                m.track_running_stats = False
+                m.running_mean = None
+                m.running_var = None
 
         # set subject_id
         datamodule.subject_id = subject_id
         datamodule.prepare_data()
         datamodule.setup()
 
-        model = tta_cls(model, config["tta_config"], datamodule.info)
+        # model = tta_cls(model, config["tta_config"], datamodule.info)
 
         if config.get("continual", False):
             cal_acc = get_accuracy(model, datamodule.calibration_dataloader(), device)
             cal_accs.append(cal_acc)
             print(f"cal_acc subject {subject_id}: {100 * cal_accs[-1]:.2f}%")
 
-        acc = get_accuracy(model, datamodule.test_dataloader(), device)
-        test_accs.append(acc)
-        test_acc_logs[subject_id] = float(acc.item())
-        print(f"test_acc subject {subject_id}: {100 *test_accs[-1]:.2f}%")
+        train_acc = get_accuracy(model, datamodule.train_dataloader(), device)
+        val_acc = get_accuracy(model, datamodule.val_dataloader(), device)
+        test_acc = get_accuracy(model, datamodule.test_dataloader(), device)
+        print(f"train_acc subject {subject_id}:")
+        pprint(train_acc)
+        print(f"val_acc subject {subject_id}:")
+        pprint(val_acc)
+        print(f"test_acc subject {subject_id}:")
+        pprint(test_acc)
+        test_acc_logs[subject_id] = {"train_acc": train_acc,
+                                     "val_acc": val_acc,
+                                     "test_acc": test_acc,}
+        
+        # test_accs.append(test_acc)
+        # test_acc_logs[subject_id] = float(acc.item())
+        # print(f"test_acc subject {subject_id}: {100 *test_accs[-1]:.2f}%")
 
     # print overall test accuracy
-    if config.get("continual", False):
-        print(f"cal_acc: {100 * np.mean(cal_accs):.2f}")
-    print(f"test_acc: {100 * np.mean(test_accs):.2f}")
+    # if config.get("continual", False):
+    #     print(f"cal_acc: {100 * np.mean(cal_accs):.2f}")
+    # print(f"test_acc: {100 * np.mean(test_accs):.2f}")
 
     with open(f'./logs/{config["source_run"]}_{config["tta_method"]}_accuracy.json', 'w') as f:
         json.dump(test_acc_logs, f)
@@ -81,6 +102,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--config", default=DEFAULT_CONFIG)
     parser.add_argument("--online", default=False, action="store_true")
+    parser.add_argument("--align", default=False, action="store_true")
     args = parser.parse_args()
 
     # load config
@@ -89,4 +111,4 @@ if __name__ == "__main__":
 
     config["online"] = args.online
 
-    run_adaptation(config)
+    run_adaptation(config, args)

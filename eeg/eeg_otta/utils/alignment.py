@@ -13,13 +13,12 @@ def _euclidean_alignment(x: np.ndarray, x_test: np.ndarray):
     return x, x_test
 
 
-def _riemannian_alignment(x: np.ndarray, x_test: np.ndarray):
+def _riemannian_alignment(x: np.ndarray):
     covmats = np.matmul(x, x.transpose((0, 2, 1)))
     R = mean_riemann(covmats)
     R_op = linalg.inv(linalg.sqrtm(R))
     x = np.matmul(R_op, x)
-    x_test = np.matmul(R_op, x_test)
-    return x, x_test
+    return x
 
 
 def _align(method: str | bool | None, x: np.ndarray, x_test: np.ndarray,
@@ -32,9 +31,8 @@ def _align(method: str | bool | None, x: np.ndarray, x_test: np.ndarray,
                 test_domains == domain] = _euclidean_alignment(
                 x[train_domains == domain], x_test[test_domains == domain])
         elif method == "riemann":
-            x[train_domains == domain], x_test[
-                test_domains == domain] = _riemannian_alignment(
-                x[train_domains == domain], x_test[test_domains == domain])
+            x[train_domains == domain] = _riemannian_alignment(x[train_domains == domain])
+            x_test[test_domains == domain] = _riemannian_alignment(x_test[test_domains == domain])
         elif method in [False, None]:
             pass
         else:

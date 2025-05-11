@@ -114,18 +114,22 @@ class BCICIV2aLOSO(BaseDataModule):
         # load the data
         X = np.concatenate([run.windows._data for train_dataset in
                             train_datasets for run in train_dataset.datasets], axis=0)
-        y = np.concatenate([run.y for train_dataset in train_datasets for run in
-                            train_dataset.datasets], axis=0)
+        y = np.concatenate([np.stack((run.y, np.full_like(run.y, subject_id)), axis=1) for train_dataset, subject_id in
+                            zip(train_datasets, train_subjects) for run in train_dataset.datasets], axis=0)
+        
         X_val = np.concatenate([run.windows._data for val_dataset in
                             val_datasets for run in val_dataset.datasets], axis=0)
-        y_val = np.concatenate([run.y for val_dataset in val_datasets for run in
-                            val_dataset.datasets], axis=0)
+        y_val = np.concatenate([np.stack((run.y, np.full_like(run.y, subject_id)), axis=1) for val_dataset, subject_id in
+                            zip(val_datasets, train_subjects) for run in val_dataset.datasets], axis=0)
+        
         X_test_T = np.concatenate([run.windows._data for run in
                                    test_dataset_T.datasets], axis=0)
         y_test_T = np.concatenate([run.y for run in test_dataset_T.datasets], axis=0)
         X_test = np.concatenate([run.windows._data for run in test_dataset.datasets],
                                 axis=0)
         y_test = np.concatenate([run.y for run in test_dataset.datasets], axis=0)
+        y_test = np.stack((y_test, np.full_like(y_test, self.subject_id)), axis=1)
+        
         train_domains = np.concatenate(
             [[subject_id] * ds.cummulative_sizes[-1] for (ds, subject_id) in
              zip(train_datasets, train_subjects)])
