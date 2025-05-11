@@ -114,11 +114,14 @@ class BaseNetModule(nn.Module):
         self.classifier = nn.Sequential(
             nn.Flatten(), nn.Linear(seq_lengths[-1] * ch_dim, n_classes))
 
-    def forward(self, x):
+    def forward(self, x, return_embeds=False):
         x = self.input_block(x)
         x = self.channel_expansion(x)
         x = self.channel_attention_block(x)
+        final_embeds = x.flatten(start_dim=1)
         x = self.classifier(x)
+        if return_embeds:
+            return x, final_embeds
         return x
 
     @staticmethod

@@ -24,8 +24,8 @@ class ClassificationModule(pl.LightningModule):
         self.save_hyperparameters(ignore=["model"])
         self.model = model
 
-    def forward(self, x):
-        return self.model(x)
+    def forward(self, x, **kwargs):
+        return self.model(x, **kwargs)
 
     def configure_optimizers(self):
         if self.hparams.optimizer == "adam":
