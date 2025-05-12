@@ -41,7 +41,8 @@ def setup(config):
 
     config["subject_ids"] = subject_ids
 
-    config["preprocessing"]["alignment"] = False
+    if config["tta_config"]["alignment"]:
+        config["preprocessing"]["alignment"] = False
 
     datamodule = datamodule_cls(config["preprocessing"], subject_ids=subject_ids)
     return model_cls, tta_cls, datamodule
@@ -87,7 +88,7 @@ def run_adaptation(config):
         'sgld_lr': 0.1,
         'sgld_std': 0.01,
         'reinit_freq': 0.05,
-        'adaptation_steps': 20,
+        'adaptation_steps': 1,
     }
 
     config['tta_config']['hyperparams'] = hyperparams
@@ -99,17 +100,26 @@ def run_adaptation(config):
     with open(f'./logs/{config["source_run"]}_{config["tta_method"]}_accuracy.json', 'w') as f:
         json.dump(test_acc_logs, f)
 
-def tune(config):
+def tune(config, n_trials=1):
     def objective(trial):
         hyperparams = {
-            'sgld_steps': trial.suggest_int("sgld_steps", 5, 200),
-            'sgld_lr': trial.suggest_float("sgld_lr", 1e-5, 1, log=True),
-            'sgld_std': trial.suggest_float("sgld_std", 1e-5, 1),
-            'reinit_freq': trial.suggest_float("reinit_freq", 1e-5, 1),
-            'adaptation_steps': trial.suggest_int("adaptation_steps", 1, 20),
+            'sgld_steps': 20,
+            'sgld_lr': 0.1,
+            'sgld_std': 0.01,
+            'reinit_freq': 0.05,
+            'adaptation_steps': trial.suggest_int('adaptation_steps', 1, 10),
         }
+        optim_args = {
+            'lr': trial.suggest_float('lr', 1e-4, 1e-1, log=True),
+            'weight_decay': trial.suggest_float('weight_decay', 1e-5, 1e-2, log=True),
+        }
+        # batch_size = trial.suggest_categorical("batch_size", [32, 64, 128, 288])
+        batch_size = 32
+        
         config_local = load_config(config)
 
+        config_local["preprocessing"]["batch_size"] = batch_size
+        config_local["tta_config"]["optimizer_kwargs"] |= optim_args
         config_local['tta_config']['hyperparams'] = hyperparams
         model_cls, tta_cls, datamodule = setup(config_local)
         test_accs, _ = calculate_accuracy(model_cls, tta_cls, datamodule, config_local)
@@ -122,7 +132,7 @@ def tune(config):
     study = optuna.create_study(storage=storage_url, study_name=study_name, direction="maximize",
                                 load_if_exists=True)
 
-    study.optimize(objective, n_trials=1000)
+    study.optimize(objective, n_trials=n_trials)
 
 
 if __name__ == "__main__":
@@ -131,6 +141,7 @@ if __name__ == "__main__":
     parser.add_argument("--config", default=DEFAULT_CONFIG)
     parser.add_argument("--online", default=False, action="store_true")
     parser.add_argument("--tune", default=False, action="store_true")
+    parser.add_argument("--trials", default=1, type=int)
     args = parser.parse_args()
 
     # load config
@@ -139,6 +150,6 @@ if __name__ == "__main__":
 
     config["online"] = args.online
     if args.tune:
-        tune(config)
+        tune(config, n_trials=args.trials)
     else:
         run_adaptation(config)

@@ -29,7 +29,7 @@ class ClassificationModule(pl.LightningModule):
 
     def configure_optimizers(self):
         if self.hparams.optimizer == "adam":
-            optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.lr,
+            optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.lr,
                                          weight_decay=self.hparams.weight_decay)
         else:
             raise NotImplementedError
