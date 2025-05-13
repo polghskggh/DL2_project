@@ -72,8 +72,8 @@ class EnergyAdaptation(TTAMethod):
         samples = choose_random * random_samples + (1 - choose_random) * buffer_samples
         return samples.to(device), inds
 
-    def sample_q(self, sgld_steps, sgld_lr, sgld_std, reinit_freq, adaptation_steps,
-                 batch_size, series_length, n_channels, device, y=None):
+    def sample_q(self, sgld_steps, sgld_lr, sgld_std, reinit_freq,
+                 batch_size, series_length, n_channels, device, y=None, **kwargs):
         """this func takes in replay_buffer now so we have the option to sample from
         scratch (i.e. replay_buffer==[]).  See test_wrn_ebm.py for example.
         """

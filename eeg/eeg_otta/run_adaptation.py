@@ -114,7 +114,7 @@ def tune(config):
         optimizer_kwargs = {
             'lr': trial.suggest_float('lr', 1e-5, 1e-1, log=True),
             'weight_decay': trial.suggest_float('weight_decay', 1e-6, 1e-1, log=True),
-            'momentum': trial.suggest_float('beta', 0.8, 0.99),
+            'momentum': trial.suggest_float('momentum', 0.8, 0.99),
         }
 
         config_local = load_config(config)
