@@ -106,11 +106,22 @@ def tune(config):
             'sgld_lr': trial.suggest_float("sgld_lr", 1e-5, 1, log=True),
             'sgld_std': trial.suggest_float("sgld_std", 1e-5, 1),
             'reinit_freq': trial.suggest_float("reinit_freq", 1e-5, 1),
-            'adaptation_steps': trial.suggest_int("adaptation_steps", 1, 20),
+            'adaptation_steps': trial.suggest_int("adaptation_steps", 1, 40),
+            'energy_real_weight': trial.suggest_float('energy_real_weight', 1e-5, 1)
         }
+        optimizer = trial.suggest_categorical("optimizer", ["SGD", "Adam"])
+
+        optimizer_kwargs = {
+            'lr': trial.suggest_float('lr', 1e-5, 1e-1, log=True),
+            'weight_decay': trial.suggest_float('weight_decay', 1e-6, 1e-1, log=True),
+            'momentum': trial.suggest_float('beta', 0.8, 0.99),
+        }
+
         config_local = load_config(config)
 
         config_local['tta_config']['hyperparams'] = hyperparams
+        config_local['tta_config']['optimizer'] = optimizer
+        config_local['tta_config']['optimizer_kwargs'] = optimizer_kwargs
         model_cls, tta_cls, datamodule = setup(config_local)
         test_accs, _ = calculate_accuracy(model_cls, tta_cls, datamodule, config_local)
         return np.mean(test_accs)
