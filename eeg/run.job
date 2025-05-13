@@ -14,5 +14,5 @@ module purge
 module load 2023
 module load Anaconda3/2023.07-2
 
-conda activate eeg
+conda activate eeg-tea
 srun python eeg_otta/run_adaptation.py --tune
