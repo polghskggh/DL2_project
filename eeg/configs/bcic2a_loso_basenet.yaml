@@ -1,8 +1,9 @@
 # general
 dataset_name: "bcic2a_loso"
-subject_ids: "all"  # either "all" or integer
-max_epochs: 1000
+subject_ids: 1  # either "all" or integer
+max_epochs: 50
 seed: 0
+train_individual: true
 
 # preprocessing
 preprocessing:

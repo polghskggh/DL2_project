@@ -127,7 +127,7 @@ class EnergyAdaptation(TTAMethod):
             # adapt
             self.optimizer.zero_grad()
 
-            alpha = self.hyperparams.energy_real_weight
+            alpha = self.hyperparams['energy_real_weight']
             loss = alpha * energy_real - (1 - alpha) * energy_fake
 
             loss.backward()

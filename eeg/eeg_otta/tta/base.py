@@ -74,7 +74,7 @@ class TTAMethod(nn.Module):
         if self.config["optimizer"] == 'Adam':
             return torch.optim.Adam(self.params,
                                     lr=self.config["optimizer_kwargs"]["lr"],
-                                    betas=(self.config["optimizer_kwargs"]["momentum"], 0.999),
+                                    betas=(self.config["optimizer_kwargs"]["beta"], 0.999),
                                     weight_decay=self.config["optimizer_kwargs"]["weight_decay"])
         elif self.config["optimizer"] == 'SGD':
             return torch.optim.SGD(self.params,

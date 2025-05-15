@@ -53,7 +53,7 @@ def train_source_model(config):
 
         # set subject_id
         datamodule.subject_id = subject_id
-
+        datamodule.train_individual = config["train_individual"]
         # train model
         model = model_cls(**config["model_kwargs"], max_epochs=config["max_epochs"])
         trainer.fit(model, datamodule=datamodule)
