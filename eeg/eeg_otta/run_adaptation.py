@@ -72,10 +72,12 @@ def calculate_accuracy(model_cls, tta_cls, datamodule, config):
         # set subject_id
         datamodule.subject_id = subject_id
         config['tta_config']['subject_id'] = subject_id
+        config['tta_config']['preprocessing'] = config['preprocessing']
         if config['train_individual']:
             config['tta_config']['initialise_log'] = version == 0
         else:
             config['tta_config']['initialise_log'] = subject_id == 1
+        
         datamodule.prepare_data()
         datamodule.setup()
 
@@ -116,23 +118,25 @@ def run_adaptation(config):
 def tune(config, n_trials=1):
     def objective(trial):
         hyperparams = {
-            'sgld_steps': trial.suggest_int("sgld_steps", 5, 200),
-            'sgld_lr': trial.suggest_float("sgld_lr", 1e-5, 1, log=True),
-            'sgld_std': trial.suggest_float("sgld_std", 1e-5, 1),
-            'reinit_freq': trial.suggest_float("reinit_freq", 1e-5, 1),
-            'adaptation_steps': trial.suggest_int("adaptation_steps", 1, 40),
-            'energy_real_weight': trial.suggest_float('energy_real_weight', 1e-5, 1)
+            'sgld_steps': trial.suggest_int('sgld_steps', 10, 30),
+            'sgld_lr': trial.suggest_float('sgld_lr', 1e-2, 3, log=True),
+            'sgld_std': trial.suggest_float('sgld_std', 1e-3, 1e-1, log=True),
+            'reinit_freq': 0.05,
+            'adaptation_steps': trial.suggest_int('adaptation_steps', 1, 5),
+            'energy_real_weight': trial.suggest_float('energy_real_weight', 1e-5, 1),
+            'apply_filter': True,
+            'align': trial.suggest_categorical('align', [True, False]),
         }
+        batch_size = trial.suggest_categorical("batch_size", [32, 64, 128, 288])
+        
         optimizer = trial.suggest_categorical("optimizer", ["SGD", "Adam"])
-
         optimizer_kwargs = {
-            'lr': trial.suggest_float('lr', 1e-5, 1e-1, log=True),
+            'lr': trial.suggest_float('lr', 1e-4, 3e-2, log=True),
             'weight_decay': trial.suggest_float('weight_decay', 1e-6, 1e-1, log=True),
             'momentum': trial.suggest_float('momentum', 0.8, 0.99),
         }
 
         config_local = load_config(config)
-        batch_size = trial.suggest_categorical("batch_size", [32, 64, 128, 288])
         config_local["preprocessing"]["batch_size"] = batch_size
         config_local['tta_config']['hyperparams'] = hyperparams
         config_local['tta_config']['optimizer'] = optimizer

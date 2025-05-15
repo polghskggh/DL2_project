@@ -1,4 +1,5 @@
 import csv
+from mne.filter import filter_data
 
 import mne
 import torch.nn as nn
@@ -70,11 +71,20 @@ class EnergyAdaptation(TTAMethod):
                 f[0] = 1  # avoid divide-by-zero
                 spectrum = np.fft.rfft(white) / np.sqrt(f)
                 pink_signal = np.fft.irfft(spectrum, n=series_length)
-                pink[i, c, :] = pink_signal
+                pink[i, c, :] = pink_signal / np.std(pink_signal) * 0.0363
         return torch.tensor(pink, dtype=torch.float32)
 
     @staticmethod
-    def _sample_p_0(reinit_freq, replay_buffer, bs, series_length, n_channels, device, y=None):
+    def _sample_p_0(reinit_freq, replay_buffer, bs, series_length, n_channels, device, y=None, train_dataset=None):
+        if train_dataset is not None:
+            inds = np.random.randint(0, len(train_dataset), bs)
+            #print(train_dataset[inds][0].shape)
+            samples = train_dataset[inds][0]
+            noise = EnergyAdaptation.generate_pink_noise(bs, series_length, n_channels)
+            samples += 0.2 * noise
+            #print(samples.shape)
+            return samples.to(device), inds
+
         if len(replay_buffer) == 0:
             return EnergyAdaptation.generate_pink_noise(bs, series_length=series_length, n_channels=n_channels), []
         buffer_size = len(replay_buffer)
@@ -87,16 +97,17 @@ class EnergyAdaptation(TTAMethod):
         samples = choose_random * random_samples + (1 - choose_random) * buffer_samples
         return samples.to(device), inds
 
-    def sample_q(self, sgld_steps, sgld_lr, sgld_std, reinit_freq,
-                 batch_size, series_length, n_channels, device, y=None, **kwargs):
+    def sample_q(self, sgld_steps, sgld_lr, sgld_std, reinit_freq, adaptation_steps,
+                 batch_size, series_length, n_channels, device, y=None, train_dataset=None, apply_filter=False, align=False):
         """this func takes in replay_buffer now so we have the option to sample from
         scratch (i.e. replay_buffer==[]).  See test_wrn_ebm.py for example.
         """
         # self.energy_model.eval()
         # get batch size
+        #print(sgld_steps)
         bs = batch_size if y is None else y.size(0)
         # generate initial samples and buffer inds of those samples (if buffer is used)
-        init_sample, buffer_inds = self._sample_p_0(reinit_freq=reinit_freq, replay_buffer=self.replay_buffer, bs=bs, series_length=series_length, n_channels=n_channels, device=device ,y=y)
+        init_sample, buffer_inds = self._sample_p_0(reinit_freq=reinit_freq, replay_buffer=self.replay_buffer, bs=bs, series_length=series_length, n_channels=n_channels, device=device ,y=y, train_dataset=train_dataset)
         init_samples = deepcopy(init_sample)
         x_k = torch.autograd.Variable(init_sample, requires_grad=True).to(self.device)
         # sgld
@@ -107,13 +118,28 @@ class EnergyAdaptation(TTAMethod):
             x_k.data -= sgld_lr * f_prime + sgld_std * torch.randn_like(x_k)
         # self.energy_model.train()
         final_samples = x_k.detach()
+
+        preprocess_config = self.config.get("preprocessing")
+        if apply_filter and preprocess_config is not None:
+            l_freq, h_freq = preprocess_config["low_cut"], preprocess_config["high_cut"]
+
+            if l_freq is not None or h_freq is not None:
+                final_samples = filter_data(final_samples.numpy().astype(np.float64()), sfreq=preprocess_config["sfreq"], l_freq=l_freq, h_freq=h_freq, verbose=False)
+                final_samples = torch.tensor(final_samples, dtype=torch.float32).to(device)
+        
+        if align and preprocess_config is not None:
+            final_samples = OnlineAlignment.align_data(
+                final_samples, method=preprocess_config.get("alignment")
+            )
+
         # update replay buffer
-        if len(self.replay_buffer) > 0:
+
+        if train_dataset is None and len(self.replay_buffer) > 0:
             self.replay_buffer[buffer_inds] = final_samples.cpu()
         return final_samples, init_samples.detach()
 
     @torch.enable_grad()  # ensure grads in possible no grad context for testing
-    def forward_and_adapt(self, x, y=None):
+    def forward_and_adapt(self, x, y=None, train_dataset=None):
         """Forward and adapt model on batch of data.
         Measure entropy of the model prediction, take gradients, and update params.
         """
@@ -133,7 +159,7 @@ class EnergyAdaptation(TTAMethod):
 
         for step in range(self.hyperparams['adaptation_steps']):
             x_fake, _ = self.sample_q(**self.hyperparams, batch_size=batch_size, series_length=series_length,
-                                      n_channels=n_channels, device=device, y=None)
+                                      n_channels=n_channels, device=device, y=None, train_dataset=train_dataset)
 
             # forward
             out_real = self.energy_model(x)
@@ -175,9 +201,9 @@ class EnergyAdaptation(TTAMethod):
             else:
                 m.requires_grad_(False)
 
-    def forward(self, x, y):
+    def forward(self, x, y, train_dataset=None):
         if self.adapt:
-            return self.forward_and_adapt(x, y)
+            return self.forward_and_adapt(x, y, train_dataset=train_dataset)
         else:
             print('no adapt')
             return self.forward_sliding_window(x)
