@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.jit
 import torch
 from copy import deepcopy
+import numpy as np
 
 from .alignment import OnlineAlignment
 from .base import TTAMethod
@@ -60,15 +61,28 @@ class EnergyAdaptation(TTAMethod):
         return torch.normal(0, 0.0363, size=(bs, n_channels, series_length))
 
     @staticmethod
+    def generate_pink_noise(bs: int, series_length: int, n_channels: int) -> torch.Tensor:
+        pink = np.zeros((bs, n_channels, series_length))
+        for i in range(bs):
+            for c in range(n_channels):
+                white = np.random.randn(series_length)
+                f = np.fft.rfftfreq(series_length)
+                f[0] = 1  # avoid divide-by-zero
+                spectrum = np.fft.rfft(white) / np.sqrt(f)
+                pink_signal = np.fft.irfft(spectrum, n=series_length)
+                pink[i, c, :] = pink_signal
+        return torch.tensor(pink, dtype=torch.float32)
+
+    @staticmethod
     def _sample_p_0(reinit_freq, replay_buffer, bs, series_length, n_channels, device, y=None):
         if len(replay_buffer) == 0:
-            return EnergyAdaptation.init_random(bs, series_length=series_length, n_channels=n_channels), []
+            return EnergyAdaptation.generate_pink_noise(bs, series_length=series_length, n_channels=n_channels), []
         buffer_size = len(replay_buffer)
         inds = torch.randint(0, buffer_size, (bs,))
         # if cond, convert inds to class conditional inds
 
         buffer_samples = replay_buffer[inds]
-        random_samples = EnergyAdaptation.init_random(bs, series_length=series_length, n_channels=n_channels)
+        random_samples = EnergyAdaptation.generate_pink_noise(bs, series_length=series_length, n_channels=n_channels)
         choose_random = (torch.rand(bs) < reinit_freq).float()[:, None, None, None]
         samples = choose_random * random_samples + (1 - choose_random) * buffer_samples
         return samples.to(device), inds
@@ -89,6 +103,7 @@ class EnergyAdaptation(TTAMethod):
 
         for k in range(sgld_steps):
             f_prime = torch.autograd.grad(self.energy_model(x_k, y=y)[0].sum(), [x_k], retain_graph=True)[0]
+            #pink_noise = EnergyAdaptation.generate_pink_noise(bs, series_length, n_channels)
             x_k.data -= sgld_lr * f_prime + sgld_std * torch.randn_like(x_k)
         # self.energy_model.train()
         final_samples = x_k.detach()
