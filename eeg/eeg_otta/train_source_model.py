@@ -59,9 +59,13 @@ def train_source_model(config):
         trainer.fit(model, datamodule=datamodule)
 
         # test model
-        test_results = trainer.test(model, datamodule)
-        test_accs.append(test_results[0]["test_acc"])
-        print(f"source accuracy subject {subject_id}: {100 *test_accs[-1]:.2f}%")
+        for i in datamodule_cls.all_subject_ids:
+            if i not in subject_ids:
+                datamodule.update_test_set(i)
+                test_results = trainer.test(model, datamodule)
+                test_accs.append(test_results[0]["test_acc"])
+
+                print(f"source accuracy subject {subject_id}: {100 *test_accs[-1]:.2f}%")
 
     print(f"source accuracy: {100 *np.mean(test_accs):.2f}%")
 

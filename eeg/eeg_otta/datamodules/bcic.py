@@ -188,6 +188,20 @@ class BCICIV2aLOSO(BaseDataModule):
         print(f'num val {len(self.val_dataset)}')
         print(f'num test {len(self.test_dataset)}')
 
+    def update_test_set(self, subject_id):
+        splitted_ds = self.dataset.split("subject")
+        test_set = splitted_ds[str(subject_id)].split("session")["session_E"]
+        X_test = np.concatenate([run.windows._data for run in test_set.datasets],
+                               axis=0)
+        y_test = np.concatenate([run.y for run in test_set.datasets], axis=0)
+
+        test_set_T = splitted_ds[str(subject_id)].split("session")["session_T"]
+        X_test_T = np.concatenate([run.windows._data for run in test_set_T.datasets],
+                                axis=0)
+
+        _, X_test = align(self.preprocessing_dict["alignment"], X_test_T, X_test)
+        self.test_dataset = BaseDataModule._make_tensor_dataset(X_test, y_test)
+
     def val_dataloader(self) -> DataLoader:
         return DataLoader(self.val_dataset,
                           batch_size=self.preprocessing_dict["batch_size"])
