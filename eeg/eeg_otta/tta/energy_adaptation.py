@@ -36,9 +36,9 @@ class EnergyAdaptation(TTAMethod):
         self.hyperparams = config['hyperparams']
         self.subject_id = config['subject_id']
         self.batch = 0
-        self.csv_file = f'logged_data.csv'
+        self.csv_file = f'./logs/{config["log_name"]}.csv'
         header = ['subject_id', 'batch', 'adaptation_step', 'loss', 'energy', 'accuracy']
-        if self.subject_id == 1:
+        if config['initialise_log']:
             with open(self.csv_file, mode='w') as file:
                 writer = csv.writer(file)
                 writer.writerow(header)

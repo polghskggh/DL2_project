@@ -53,17 +53,28 @@ def calculate_accuracy(model_cls, tta_cls, datamodule, config):
 
     cal_accs, test_accs = [], []
     test_acc_logs = {}
-    for version, subject_id in enumerate(config['subject_ids']):
+
+
+    subject_id_lst = [_id for _id in datamodule.all_subject_ids if _id not in config["subject_ids"]] \
+        if config['train_individual'] \
+        else config["subject_ids"]
+
+    for version, subject_id in enumerate(subject_id_lst):
         seed_everything(config["seed"])
 
         # load checkpoint
-        ckpt_path = os.path.join(CHECKPOINT_PATH, config["source_run"], str(subject_id),
+        ckpt_path = os.path.join(CHECKPOINT_PATH, config["source_run"],
+                                 str(config["subject_ids"][0]) if config['train_individual'] else str(subject_id),
                                  "model-v1.ckpt")
         model = model_cls.load_from_checkpoint(ckpt_path, map_location=device)
 
         # set subject_id
         datamodule.subject_id = subject_id
         config['tta_config']['subject_id'] = subject_id
+        if config['train_individual']:
+            config['tta_config']['initialise_log'] = version == 0
+        else:
+            config['tta_config']['initialise_log'] = subject_id == 1
         datamodule.prepare_data()
         datamodule.setup()
 
@@ -89,6 +100,7 @@ def run_adaptation(config):
         'sgld_std': 0.01,
         'reinit_freq': 0.05,
         'adaptation_steps': 20,
+        'energy_real_weight': 1,
     }
 
     config['tta_config']['hyperparams'] = hyperparams
@@ -97,7 +109,7 @@ def run_adaptation(config):
     # print overall test accuracy
     print(f"test_acc: {100 * np.mean(test_accs):.2f}")
 
-    with open(f'./logs/{config["source_run"]}_{config["tta_method"]}_accuracy.json', 'w') as f:
+    with open(f'./logs/{config["source_run"]}_{config["tta_config"]["log_name"]}_accuracy.json', 'w') as f:
         json.dump(test_acc_logs, f)
 
 def tune(config, n_trials=1):
