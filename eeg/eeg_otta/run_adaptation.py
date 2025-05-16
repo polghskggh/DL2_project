@@ -104,6 +104,9 @@ def run_adaptation(config):
         'reinit_freq': 0.05,
         'adaptation_steps': 5,
         'energy_real_weight': 1,
+        'apply_filter': True,
+        'align': False,
+        'noise_alpha': 1.1,
     }
 
     config['tta_config']['hyperparams'] = hyperparams
