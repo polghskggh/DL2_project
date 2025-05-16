@@ -126,6 +126,7 @@ def tune(config, n_trials=1):
             'energy_real_weight': trial.suggest_float('energy_real_weight', 1e-5, 1),
             'apply_filter': True,
             'align': trial.suggest_categorical('align', [True, False]),
+            'noise_alpha': trial.suggest_float('noise_alpha', 0.0, 1.5),
         }
         batch_size = trial.suggest_categorical("batch_size", [32, 64, 128, 288])
         
