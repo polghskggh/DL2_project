@@ -65,7 +65,7 @@ def calculate_accuracy(model_cls, tta_cls, datamodule, config):
         # load checkpoint
         ckpt_path = os.path.join(CHECKPOINT_PATH, config["source_run"],
                                  str(config["subject_ids"][0]) if config['train_individual'] else str(subject_id),
-                                 "model-v1.ckpt")
+                                 "model.ckpt" if config['train_individual'] else "model-v1.ckpt")
         model = model_cls.load_from_checkpoint(ckpt_path, map_location=device)
 
         # set subject_id
@@ -99,7 +99,7 @@ def run_adaptation(config):
         'sgld_lr': 0.1,
         'sgld_std': 0.01,
         'reinit_freq': 0.05,
-        'adaptation_steps': 20,
+        'adaptation_steps': 10,
         'energy_real_weight': 1,
     }
 
