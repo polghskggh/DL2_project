@@ -9,7 +9,6 @@ def plot_energy_accuracy_loss(log_file_path, individual=False):
     df = pd.read_csv(log_file_path)
     info_processed = {}
 
-
     for subj_id in list(set(df['subject_id'])):
         info_processed[int(subj_id)] = {
             'energy' : [],
@@ -37,7 +36,7 @@ def plot_energy_accuracy_loss(log_file_path, individual=False):
 
     for i in range(rows):
         for j in range(cols):
-            subj_id = all_subj_id[i * rows + j] if individual else i * rows + j + 1
+            subj_id = all_subj_id[i * cols + j] if individual else i * rows + j + 1
             print(subj_id)
             ax = axes[i, j]
             ax.plot(

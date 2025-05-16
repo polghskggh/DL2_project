@@ -37,6 +37,7 @@ class EnergyAdaptation(TTAMethod):
         self.subject_id = config['subject_id']
         self.batch = 0
         self.csv_file = f'./logs/{config["log_name"]}.csv'
+        self.adapt= True
         header = ['subject_id', 'batch', 'adaptation_step', 'loss', 'energy', 'accuracy']
         if config['initialise_log']:
             with open(self.csv_file, mode='w') as file:
@@ -160,4 +161,8 @@ class EnergyAdaptation(TTAMethod):
                 m.requires_grad_(False)
 
     def forward(self, x, y):
-        return self.forward_and_adapt(x, y)
+        if self.adapt:
+            return self.forward_and_adapt(x, y)
+        else:
+            print('no adapt')
+            return self.forward_sliding_window(x)
