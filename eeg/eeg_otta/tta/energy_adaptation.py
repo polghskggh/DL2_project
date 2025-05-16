@@ -139,7 +139,7 @@ class EnergyAdaptation(TTAMethod):
         
         if align and preprocess_config is not None:
             final_samples = OnlineAlignment.align_data(
-                final_samples, method=preprocess_config.get("alignment")
+                final_samples, alignment=preprocess_config.get("alignment"), averaging_method="equal",
             )
 
         # update replay buffer
