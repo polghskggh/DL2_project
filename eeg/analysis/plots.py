@@ -4,7 +4,7 @@ import numpy as np
 import json
 from collections import defaultdict
 
-def plot_energy_accuracy_loss(log_file_path):
+def plot_energy_accuracy_loss(log_file_path, individual=False):
 
     df = pd.read_csv(log_file_path)
     info_processed = {}
@@ -25,11 +25,20 @@ def plot_energy_accuracy_loss(log_file_path):
 
     # plot
     minmax_norm = lambda data: (data - data.min()) / (data.max() - data.min())
-    fig, axes = plt.subplots(3, 3, figsize=(20, 10))
 
-    for i in range(3):
-        for j in range(3):
-            subj_id = i*3 + j + 1
+    all_subj_id = list(set(df['subject_id']))
+
+    if individual:
+        rows, cols = 2, 4
+    else:
+        rows, cols = 3, 3
+
+    fig, axes = plt.subplots(rows, cols, figsize=(20, 10))
+
+    for i in range(rows):
+        for j in range(cols):
+            subj_id = all_subj_id[i * rows + j] if individual else i * rows + j + 1
+            print(subj_id)
             ax = axes[i, j]
             ax.plot(
                 [i for i in range(1, len(info_processed[subj_id]['energy']) + 1)],
@@ -78,7 +87,7 @@ def plot_energy_accuracy_loss(log_file_path):
                 ax.text(1.1, -0.05, "Acc", transform=ax.transAxes,
                         rotation=0, ha='left', va='top', color='maroon', fontsize=10)
 
-            energy_diff = max(info_processed[i*3 + j + 1]['energy']) - min(info_processed[i*3 + j + 1]['energy'])
+            energy_diff = max(info_processed[subj_id]['energy']) - min(info_processed[subj_id]['energy'])
             ax.set_title(f'Subject ID : {subj_id}, ΔEnergy: {energy_diff:.5f}')
             ax.text(1, -0.05, "Loss", transform=ax.transAxes,
                     rotation=0, ha='left', va='top', color='gray', fontsize=10)

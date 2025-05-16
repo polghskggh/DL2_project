@@ -47,6 +47,7 @@ class ClassificationModule(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         loss, acc = self.shared_step(batch, batch_idx, mode="val")
+        self.log("val_acc", acc, prog_bar=True, on_epoch=True)
         return {"val_loss": loss, "val_acc": acc}
 
     def test_step(self, batch, batch_idx):

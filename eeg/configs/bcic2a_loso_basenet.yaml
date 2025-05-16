@@ -1,7 +1,7 @@
 # general
 dataset_name: "bcic2a_loso"
-subject_ids: 1  # either "all" or integer
-max_epochs: 50
+subject_ids: 2  # either "all" or integer
+max_epochs: 20
 seed: 0
 train_individual: true
 

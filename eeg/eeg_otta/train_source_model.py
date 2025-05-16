@@ -43,7 +43,12 @@ def train_source_model(config):
         # set up the trainer
         checkpoint_cb = ModelCheckpoint(
             dirpath=os.path.join(CHECKPOINT_PATH, run_name, str(subject_id)),
-            filename="model")
+            filename="model",
+            monitor="val_acc",
+            mode='max',
+            save_top_k=1,
+            verbose=True
+        )
         trainer = Trainer(
             callbacks=[checkpoint_cb],
             max_epochs=config["max_epochs"],
@@ -61,11 +66,11 @@ def train_source_model(config):
         # test model
         for i in datamodule_cls.all_subject_ids:
             if i not in subject_ids:
-                datamodule.update_test_set(i)
+                datamodule.subject_id = i
                 test_results = trainer.test(model, datamodule)
                 test_accs.append(test_results[0]["test_acc"])
 
-                print(f"source accuracy subject {subject_id}: {100 *test_accs[-1]:.2f}%")
+                print(f"source accuracy subject {i}: {100 *test_accs[-1]:.2f}%")
 
     print(f"source accuracy: {100 *np.mean(test_accs):.2f}%")
 

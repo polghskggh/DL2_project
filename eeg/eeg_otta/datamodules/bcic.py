@@ -102,106 +102,109 @@ class BCICIV2aLOSO(BaseDataModule):
 
     def setup(self, stage: Optional[str] = None) -> None:
         # split the data
-        splitted_ds = self.dataset.split("subject")
-        if self.train_individual:
-            print('training for one subject')
-            test_subjects = [
-                subj_id for subj_id in self.all_subject_ids if subj_id != self.subject_id]
-            test_datasets_T = [splitted_ds[str(subj_id)].split("session")["session_T"]
-                              for subj_id in test_subjects]
-            test_datasets = [splitted_ds[str(subj_id)].split("session")["session_E"]
-                            for subj_id in test_subjects]
-            train_subjects = [self.subject_id]
-            train_datasets = splitted_ds[str(self.subject_id)].split("session")["session_T"]
-            val_datasets = splitted_ds[str(self.subject_id)].split("session")["session_E"]
-
-            # load the data
-            X_test_T = np.concatenate([run.windows._data for test_dataset in
-                                test_datasets_T for run in test_dataset.datasets], axis=0)
-            y_test_T = np.concatenate([run.y for test_dataset in test_datasets_T for run in
-                                test_dataset.datasets], axis=0)
-
-            X_test = np.concatenate([run.windows._data for test_dataset in
-                                       test_datasets for run in test_dataset.datasets], axis=0)
-            y_test = np.concatenate([run.y for test_dataset in test_datasets for run in
-                                       test_dataset.datasets], axis=0)
-
-            X = np.concatenate([run.windows._data for run in
-                                       train_datasets.datasets], axis=0)
-            y = np.concatenate([run.y for run in train_datasets.datasets], axis=0)
-
-            X_val = np.concatenate([run.windows._data for run in val_datasets.datasets],
-                                    axis=0)
-            y_val = np.concatenate([run.y for run in val_datasets.datasets], axis=0)
-
-            train_domains = np.concatenate(
-                [[subject_id] * ds.cummulative_sizes[-1] for (ds, subject_id) in
-                 zip([train_datasets], train_subjects)])
-            val_domains = np.concatenate(
-                [[subject_id] * ds.cummulative_sizes[-1] for (ds, subject_id) in
-                 zip([val_datasets], train_subjects)])
+        if stage == 'test':
+            self.update_test_set()
         else:
-            train_subjects = [
-                subj_id for subj_id in self.all_subject_ids if subj_id != self.subject_id]
-            train_datasets = [splitted_ds[str(subj_id)].split("session")["session_T"]
+            splitted_ds = self.dataset.split("subject")
+            if self.train_individual:
+                print('training for one subject')
+                test_subjects = [
+                    subj_id for subj_id in self.all_subject_ids if subj_id != self.subject_id]
+                test_datasets_T = [splitted_ds[str(subj_id)].split("session")["session_T"]
+                                  for subj_id in test_subjects]
+                test_datasets = [splitted_ds[str(subj_id)].split("session")["session_E"]
+                                for subj_id in test_subjects]
+                train_subjects = [self.subject_id]
+                train_datasets = splitted_ds[str(self.subject_id)].split("session")["session_T"]
+                val_datasets = splitted_ds[str(self.subject_id)].split("session")["session_E"]
+
+                # load the data
+                X_test_T = np.concatenate([run.windows._data for test_dataset in
+                                    test_datasets_T for run in test_dataset.datasets], axis=0)
+                y_test_T = np.concatenate([run.y for test_dataset in test_datasets_T for run in
+                                    test_dataset.datasets], axis=0)
+
+                X_test = np.concatenate([run.windows._data for test_dataset in
+                                           test_datasets for run in test_dataset.datasets], axis=0)
+                y_test = np.concatenate([run.y for test_dataset in test_datasets for run in
+                                           test_dataset.datasets], axis=0)
+
+                X = np.concatenate([run.windows._data for run in
+                                           train_datasets.datasets], axis=0)
+                y = np.concatenate([run.y for run in train_datasets.datasets], axis=0)
+
+                X_val = np.concatenate([run.windows._data for run in val_datasets.datasets],
+                                        axis=0)
+                y_val = np.concatenate([run.y for run in val_datasets.datasets], axis=0)
+
+                train_domains = np.concatenate(
+                    [[subject_id] * ds.cummulative_sizes[-1] for (ds, subject_id) in
+                     zip([train_datasets], train_subjects)])
+                val_domains = np.concatenate(
+                    [[subject_id] * ds.cummulative_sizes[-1] for (ds, subject_id) in
+                     zip([val_datasets], train_subjects)])
+            else:
+                train_subjects = [
+                    subj_id for subj_id in self.all_subject_ids if subj_id != self.subject_id]
+                train_datasets = [splitted_ds[str(subj_id)].split("session")["session_T"]
+                                      for subj_id in train_subjects]
+                val_datasets = [splitted_ds[str(subj_id)].split("session")["session_E"]
                                   for subj_id in train_subjects]
-            val_datasets = [splitted_ds[str(subj_id)].split("session")["session_E"]
-                              for subj_id in train_subjects]
-            test_dataset_T = splitted_ds[str(self.subject_id)].split("session")["session_T"]
-            test_dataset = splitted_ds[str(self.subject_id)].split("session")["session_E"]
+                test_dataset_T = splitted_ds[str(self.subject_id)].split("session")["session_T"]
+                test_dataset = splitted_ds[str(self.subject_id)].split("session")["session_E"]
 
-            # load the data
-            X = np.concatenate([run.windows._data for train_dataset in
-                                train_datasets for run in train_dataset.datasets], axis=0)
-            y = np.concatenate([run.y for train_dataset in train_datasets for run in
-                                train_dataset.datasets], axis=0)
-            X_val = np.concatenate([run.windows._data for val_dataset in
-                                val_datasets for run in val_dataset.datasets], axis=0)
-            y_val = np.concatenate([run.y for val_dataset in val_datasets for run in
-                                val_dataset.datasets], axis=0)
-            X_test_T = np.concatenate([run.windows._data for run in
-                                       test_dataset_T.datasets], axis=0)
-            y_test_T = np.concatenate([run.y for run in test_dataset_T.datasets], axis=0)
-            X_test = np.concatenate([run.windows._data for run in test_dataset.datasets],
-                                    axis=0)
-            y_test = np.concatenate([run.y for run in test_dataset.datasets], axis=0)
-            train_domains = np.concatenate(
-                [[subject_id] * ds.cummulative_sizes[-1] for (ds, subject_id) in
-                 zip(train_datasets, train_subjects)])
-            val_domains = np.concatenate(
-                [[subject_id] * ds.cummulative_sizes[-1] for (ds, subject_id) in
-                 zip(val_datasets, train_subjects)])
+                # load the data
+                X = np.concatenate([run.windows._data for train_dataset in
+                                    train_datasets for run in train_dataset.datasets], axis=0)
+                y = np.concatenate([run.y for train_dataset in train_datasets for run in
+                                    train_dataset.datasets], axis=0)
+                X_val = np.concatenate([run.windows._data for val_dataset in
+                                    val_datasets for run in val_dataset.datasets], axis=0)
+                y_val = np.concatenate([run.y for val_dataset in val_datasets for run in
+                                    val_dataset.datasets], axis=0)
+                X_test_T = np.concatenate([run.windows._data for run in
+                                           test_dataset_T.datasets], axis=0)
+                y_test_T = np.concatenate([run.y for run in test_dataset_T.datasets], axis=0)
+                X_test = np.concatenate([run.windows._data for run in test_dataset.datasets],
+                                        axis=0)
+                y_test = np.concatenate([run.y for run in test_dataset.datasets], axis=0)
+                train_domains = np.concatenate(
+                    [[subject_id] * ds.cummulative_sizes[-1] for (ds, subject_id) in
+                     zip(train_datasets, train_subjects)])
+                val_domains = np.concatenate(
+                    [[subject_id] * ds.cummulative_sizes[-1] for (ds, subject_id) in
+                     zip(val_datasets, train_subjects)])
 
-        # align data
-        X, X_val = align(self.preprocessing_dict["alignment"], X, X_val,
-                         train_domains=train_domains, test_domains=val_domains)
-        _, X_test = align(self.preprocessing_dict["alignment"], X_test_T, X_test)
+            # align data
+            X, X_val = align(self.preprocessing_dict["alignment"], X, X_val,
+                             train_domains=train_domains, test_domains=val_domains)
+            _, X_test = align(self.preprocessing_dict["alignment"], X_test_T, X_test)
 
-        # make datasets
-        self.train_dataset = BaseDataModule._make_tensor_dataset(X, y)
-        self.val_dataset = BaseDataModule._make_tensor_dataset(X_val, y_val)
-        self.test_dataset = BaseDataModule._make_tensor_dataset(X_test, y_test)
-        self.calibration_dataset = BaseDataModule._make_tensor_dataset(X_test_T,
-                                                                       y_test_T)
+            # make datasets
+            self.train_dataset = BaseDataModule._make_tensor_dataset(X, y)
+            self.val_dataset = BaseDataModule._make_tensor_dataset(X_val, y_val)
+            self.test_dataset = BaseDataModule._make_tensor_dataset(X_test, y_test)
+            self.calibration_dataset = BaseDataModule._make_tensor_dataset(X_test_T,
+                                                                           y_test_T)
 
-        print(f'num train {len(self.train_dataset)}')
-        print(f'num val {len(self.val_dataset)}')
-        print(f'num test {len(self.test_dataset)}')
+            print(f'num train {len(self.train_dataset)}')
+            print(f'num val {len(self.val_dataset)}')
+            print(f'num test {len(self.test_dataset)}')
 
-    def update_test_set(self, subject_id):
+    def update_test_set(self):
         splitted_ds = self.dataset.split("subject")
-        test_set = splitted_ds[str(subject_id)].split("session")["session_E"]
+        test_set = splitted_ds[str(self.subject_id)].split("session")["session_E"]
         X_test = np.concatenate([run.windows._data for run in test_set.datasets],
                                axis=0)
         y_test = np.concatenate([run.y for run in test_set.datasets], axis=0)
 
-        test_set_T = splitted_ds[str(subject_id)].split("session")["session_T"]
+        test_set_T = splitted_ds[str(self.subject_id)].split("session")["session_T"]
         X_test_T = np.concatenate([run.windows._data for run in test_set_T.datasets],
                                 axis=0)
 
         _, X_test = align(self.preprocessing_dict["alignment"], X_test_T, X_test)
         self.test_dataset = BaseDataModule._make_tensor_dataset(X_test, y_test)
-
+        print(f'num test {len(self.test_dataset)}')
     def val_dataloader(self) -> DataLoader:
         return DataLoader(self.val_dataset,
                           batch_size=self.preprocessing_dict["batch_size"])
