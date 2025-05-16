@@ -98,15 +98,15 @@ def run_adaptation(config):
     config = load_config(config)
 
     hyperparams = {
-        'sgld_steps': 20,
-        'sgld_lr': 0.1,
-        'sgld_std': 0.01,
+        'sgld_steps': 26,
+        'sgld_lr': 0.03098715690500288,
+        'sgld_std': 0.0033756671301297617,
         'reinit_freq': 0.05,
-        'adaptation_steps': 5,
+        'adaptation_steps': 3,
         'energy_real_weight': 1,
         'apply_filter': True,
         'align': False,
-        'noise_alpha': 1.1,
+        'noise_alpha': 1.1021171479575294,
     }
 
     config['tta_config']['hyperparams'] = hyperparams
@@ -125,25 +125,25 @@ def tune(config, n_trials=1):
             'sgld_lr': trial.suggest_float('sgld_lr', 1e-2, 3, log=True),
             'sgld_std': trial.suggest_float('sgld_std', 1e-3, 1e-1, log=True),
             'reinit_freq': 0.05,
-            'adaptation_steps': trial.suggest_int('adaptation_steps', 1, 5),
-            'energy_real_weight': trial.suggest_float('energy_real_weight', 1e-5, 1),
+            'adaptation_steps': trial.suggest_int('adaptation_steps', 1, 8),
+            'energy_real_weight': trial.suggest_float('energy_real_weight', 1e-1, 1),
             'apply_filter': True,
-            'align': trial.suggest_categorical('align', [True, False]),
+            'align':False,
             'noise_alpha': trial.suggest_float('noise_alpha', 0.0, 1.5),
         }
         batch_size = trial.suggest_categorical("batch_size", [32, 64, 128, 288])
         
-        optimizer = trial.suggest_categorical("optimizer", ["SGD", "Adam"])
+        # optimizer = trial.suggest_categorical("optimizer", ["SGD", "Adam"])
         optimizer_kwargs = {
             'lr': trial.suggest_float('lr', 1e-4, 3e-2, log=True),
-            'weight_decay': trial.suggest_float('weight_decay', 1e-6, 1e-1, log=True),
-            'momentum': trial.suggest_float('momentum', 0.8, 0.99),
+            'weight_decay': trial.suggest_float('weight_decay', 1e-6, 1e-2, log=True),
+            # 'momentum': trial.suggest_float('momentum', 0.8, 0.99),
         }
 
         config_local = load_config(config)
         config_local["preprocessing"]["batch_size"] = batch_size
         config_local['tta_config']['hyperparams'] = hyperparams
-        config_local['tta_config']['optimizer'] = optimizer
+        # config_local['tta_config']['optimizer'] = optimizer
         config_local['tta_config']['optimizer_kwargs'] = optimizer_kwargs
         model_cls, tta_cls, datamodule = setup(config_local)
         test_accs, _ = calculate_accuracy(model_cls, tta_cls, datamodule, config_local)
