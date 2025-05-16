@@ -1,4 +1,4 @@
-source_run: "src-bcic2a_loso_2025-05-13_15-57-40"
+source_run: "src-bcic2a_loso_2025-05-15_14-02-14"
 tta_method: "energy_adaptation"
 continual: false
 tta_config:
@@ -11,3 +11,4 @@ tta_config:
     lr: 0.005
     beta: 0.9
     weight_decay: 0.0
+  log_name: "energy_subject_2"
