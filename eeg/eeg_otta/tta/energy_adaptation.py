@@ -134,7 +134,7 @@ class EnergyAdaptation(TTAMethod):
             l_freq, h_freq = preprocess_config["low_cut"], preprocess_config["high_cut"]
 
             if l_freq is not None or h_freq is not None:
-                final_samples = filter_data(final_samples.numpy().astype(np.float64()), sfreq=preprocess_config["sfreq"], l_freq=l_freq, h_freq=h_freq, verbose=False)
+                final_samples = filter_data(final_samples.cpu().numpy().astype(np.float64()), sfreq=preprocess_config["sfreq"], l_freq=l_freq, h_freq=h_freq, verbose=False)
                 final_samples = torch.tensor(final_samples, dtype=torch.float32).to(device)
         
         if align and preprocess_config is not None:
