@@ -108,8 +108,9 @@ def run_adaptation(config):
         'align': False,
         'noise_alpha': 1.1021171479575294,
     }
-
+    config['tta_config']['mita'] = True
     config['tta_config']['hyperparams'] = hyperparams
+    config['tta_config']['optimizer_kwargs']['momentum'] = config['tta_config']['optimizer_kwargs']['beta']
     model_cls, tta_cls, datamodule = setup(config)
     test_accs, test_acc_logs = calculate_accuracy(model_cls, tta_cls, datamodule, config)
     # print overall test accuracy
