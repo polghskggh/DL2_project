@@ -8,16 +8,23 @@ from torch.utils.data import DataLoader
 def get_accuracy(model: nn.Module, data_loader: DataLoader, device: torch.device):
     outputs, labels = [], []
     with torch.no_grad():
-        for batch in tqdm(data_loader):
-            x, y = batch
-            output = torch.softmax(model(x.to(device), y), -1)
+        for step in range(model.hyperparams['adaptation_steps']):
+            model.step += 1
+            model.adapt=True
+            for batch in tqdm(data_loader):
+                x, y = batch
+                output = torch.softmax(model(x.to(device), y), -1)
 
-        model.adapt = False
-        for batch in tqdm(data_loader):
-            x, y = batch
-            output = torch.softmax(model(x.to(device), y), -1)
-            outputs.append(output)
-            labels.append(y)
+            model.adapt = False
+            model.batch = 0
+            for batch in tqdm(data_loader):
+                x, y = batch
+                output = torch.softmax(model(x.to(device), y), -1)
+
+                if step == model.hyperparams['adaptation_steps'] - 1:
+                    outputs.append(output)
+                    labels.append(y)
+                model.batch += 1
 
     outputs = torch.concatenate(outputs)
     labels = torch.concatenate(labels)
