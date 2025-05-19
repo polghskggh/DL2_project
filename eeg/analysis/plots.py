@@ -126,6 +126,7 @@ def plot_accuracy(acc_list, configs):
     plt.show()
 
 def plot_energy_per_batch(log_file_path):
+    minmax_norm = lambda data: (data - data.min()) / (data.max() - data.min())
 
     df = pd.read_csv(log_file_path)
     info_processed = {}
@@ -150,7 +151,7 @@ def plot_energy_per_batch(log_file_path):
                 if batch == 'mean_energy':
                     ax.plot(
                         [i for i in range(1, len(energy_list) + 1)],
-                        energy_list,
+                        minmax_norm(np.array(energy_list)),
                         'x--',
                         label='Mean Energy',
                         linewidth=2
@@ -158,7 +159,7 @@ def plot_energy_per_batch(log_file_path):
                 else:
                     ax.plot(
                         [i for i in range(1, len(energy_list) + 1)],
-                        energy_list,
+                        minmax_norm(np.array(energy_list)),
                         label=f'Batch {batch}',
                         linewidth=2
                     )
@@ -171,7 +172,7 @@ def plot_energy_per_batch(log_file_path):
     plt.tight_layout()
     plt.show()
 
-log_path = '../logged_data.csv'
+log_path = '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/energy_post_no_fake_small_lr.csv'
 plot_energy_per_batch(log_path)
 plot_energy_accuracy_loss(log_path)
 # filepath_lst = [

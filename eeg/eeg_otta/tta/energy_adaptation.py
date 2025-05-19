@@ -36,16 +36,17 @@ class EnergyAdaptation(TTAMethod):
         self.hyperparams = config['hyperparams']
         self.subject_id = config['subject_id']
         self.batch = 0
+        self.step = 0
         self.csv_file = f'./logs/{config["log_name"]}.csv'
         self.adapt= True
-        header = ['subject_id', 'batch', 'adaptation_step', 'loss', 'energy', 'accuracy']
+        header = ['subject_id', 'batch', 'adaptation_step', 'loss', 'energy','accuracy']
         if config['initialise_log']:
             with open(self.csv_file, mode='w') as file:
                 writer = csv.writer(file)
                 writer.writerow(header)
 
-
-    def forward_sliding_window(self, x):
+    @torch.enable_grad()
+    def forward_sliding_window(self, x, y):
         if self.config.get("alignment", False):
             # align data
             x = OnlineAlignment.align_data(
@@ -114,37 +115,37 @@ class EnergyAdaptation(TTAMethod):
         n_channels = x.shape[1]
         series_length = x.shape[2]
         device = x.device
-        logs = []
 
-        for step in range(self.hyperparams['adaptation_steps']):
+        alpha = self.hyperparams['energy_real_weight']
+
+        if alpha != 1:
             x_fake, _ = self.sample_q(**self.hyperparams, batch_size=batch_size, series_length=series_length,
                                       n_channels=n_channels, device=device, y=None)
-
-            # forward
-            out_real = self.energy_model(x)
-            energy_real = out_real[0].mean()
             energy_fake = self.energy_model(x_fake)[0].mean()
 
-            # adapt
-            self.optimizer.zero_grad()
+        # forward
+        out_real = self.energy_model(x)
+        energy_real = out_real[0].mean()
 
-            alpha = self.hyperparams['energy_real_weight']
+        # adapt
+        self.optimizer.zero_grad()
+
+        if alpha != 1:
             loss = alpha * energy_real - (1 - alpha) * energy_fake
+        else:
+            loss = energy_real
 
+        if self.adapt:
             loss.backward()
             self.optimizer.step()
-
-            if y is not None:
-                outputs = self.energy_model.classify(x)
-                accuracy = (outputs.argmax(-1).cpu() == y).float().numpy().mean()
-                logs.append((self.subject_id, self.batch, step, loss.item(), energy_real.item(), accuracy))
-
-        outputs = self.energy_model.classify(x)
-        if len(logs) > 0:
+        else:
+            accuracy = (self.energy_model.classify(x).argmax(-1).cpu() == y).float().numpy().mean()
             with open(self.csv_file, mode='a') as file:
                 writer = csv.writer(file)
-                writer.writerows(logs)
-        self.batch += 1
+                writer.writerows([(self.subject_id, self.batch, self.step, loss.item(), energy_real.item(), accuracy)])
+
+        outputs = self.energy_model.classify(x)
+
         return outputs
 
     def configure_model(self):
@@ -161,8 +162,4 @@ class EnergyAdaptation(TTAMethod):
                 m.requires_grad_(False)
 
     def forward(self, x, y):
-        if self.adapt:
-            return self.forward_and_adapt(x, y)
-        else:
-            print('no adapt')
-            return self.forward_sliding_window(x)
+        return self.forward_and_adapt(x, y)
