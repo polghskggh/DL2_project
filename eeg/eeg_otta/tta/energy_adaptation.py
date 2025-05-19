@@ -49,7 +49,7 @@ class EnergyAdaptation(TTAMethod):
                 writer.writerow(header)
 
     @torch.enable_grad()
-    def forward_sliding_window(self, x, y):
+    def forward_sliding_window(self, x):
         if self.config.get("alignment", False):
             # align data
             x = OnlineAlignment.align_data(
