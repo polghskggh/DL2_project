@@ -144,7 +144,7 @@ def tune(config, n_trials=1):
         config_local["preprocessing"]["batch_size"] = batch_size
         config_local['tta_config']['hyperparams'] = hyperparams
         # config_local['tta_config']['optimizer'] = optimizer
-        config_local['tta_config']['optimizer_kwargs'] = optimizer_kwargs
+        config_local['tta_config']['optimizer_kwargs'] |= optimizer_kwargs
         model_cls, tta_cls, datamodule = setup(config_local)
         test_accs, _ = calculate_accuracy(model_cls, tta_cls, datamodule, config_local)
         return np.mean(test_accs)
