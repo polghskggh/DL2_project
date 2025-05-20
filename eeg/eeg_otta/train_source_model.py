@@ -18,7 +18,15 @@ CONFIG_DIR = os.path.join(Path(__file__).resolve().parents[1], "configs")
 DEFAULT_CONFIG = "bcic2a_loso_basenet.yaml"
 
 
-def train_source_model(config, model_cls):
+models = {
+    "base": BaseNet,
+    "lstm": LSTM,
+}
+
+
+def train_source_model(config):
+    model_cls = models[config["model"]]
+    
     # get datamodule_cls and model_cls
     datamodule_cls = get_datamodule_cls(dataset_name=config["dataset_name"])
 
@@ -77,18 +85,12 @@ def train_source_model(config, model_cls):
 
 if __name__ == "__main__":
     # parse arguments
-    models = {
-        "base": BaseNet,
-        "lstm": LSTM,
-    }
-
     parser = ArgumentParser()
     parser.add_argument("--config", default=DEFAULT_CONFIG)
-    parser.add_argument("--model", default="base")
     args = parser.parse_args()
 
     # load config
     with open(os.path.join(CONFIG_DIR, args.config)) as f:
         config = yaml.safe_load(f)
 
-    train_source_model(config, models[args.model])
+    train_source_model(config)

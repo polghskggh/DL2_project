@@ -26,9 +26,9 @@ class LSTMCore(nn.Module):
     Internal model used by LSTM wrapper that defines actual LSTM + FC layers.
     """
 
-    def __init__(self, n_channels, lstm_size, hidden_size, n_classes, dropout):
+    def __init__(self, n_channels, lstm_size, hidden_size, n_classes, dropout=0.25):
         super().__init__()
-        self.lstm = nn.LSTM(input_size=n_channels, hidden_size=lstm_size, batch_first=True)
+        self.lstm = nn.LSTM(input_size=n_channels, hidden_size=lstm_size, batch_first=True, dropout=dropout, bidirectional=True)
 
         self.rearrange_input = Rearrange("b c t -> b t c")
         self.fc1 = nn.Linear(lstm_size, hidden_size)
@@ -45,9 +45,9 @@ class LSTMCore(nn.Module):
         final_hidden = h_n[-1]  # (batch, lstm_size)
 
         fc1_out = self.fc1(final_hidden)
-        fc1_out = self.bn1(fc1_out)
         fc1_out = F.softplus(fc1_out)
         fc1_out = self.dropout(fc1_out)
+        fc1_out = self.bn1(fc1_out)
 
         logits = self.fc2(fc1_out)  # (batch, n_classes)
         return logits

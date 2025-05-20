@@ -3,6 +3,7 @@ dataset_name: "bcic2a_loso"
 subject_ids: "all"  # either "all" or integer
 max_epochs: 1000
 seed: 0
+train_individual: false
 
 # preprocessing
 preprocessing:
@@ -18,13 +19,13 @@ preprocessing:
 model: "lstm"
 model_kwargs:
   n_channels: 22
-  lstm_size: 128
+  lstm_size: 64
   hidden_size: 64
   n_classes: 4
-  dropout: 0.5
-  lr: 0.001
+  dropout: 0.0
+  lr: 0.01
   weight_decay: 0.001
   optimizer: "adam"
-  scheduler: True
+  scheduler: False
   warmup_epochs: 20
-  label_smoothing: 0.1
+  label_smoothing: 0.0
