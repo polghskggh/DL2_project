@@ -1,0 +1,30 @@
+# general
+dataset_name: "bcic2a_loso"
+subject_ids: "all"  # either "all" or integer
+max_epochs: 1000
+seed: 0
+
+# preprocessing
+preprocessing:
+  sfreq: 250
+  low_cut: 0
+  high_cut: 40
+  start: 0.0
+  stop: 0.0
+  alignment: "riemann"
+  batch_size: 64
+
+# model
+model: "lstm"
+model_kwargs:
+  n_channels: 22
+  lstm_size: 128
+  hidden_size: 64
+  n_classes: 4
+  dropout: 0.5
+  lr: 0.001
+  weight_decay: 0.001
+  optimizer: "adam"
+  scheduler: True
+  warmup_epochs: 20
+  label_smoothing: 0.1

@@ -8,18 +8,18 @@ import numpy as np
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-from eeg_otta.models import BaseNet
+from eeg_otta.models import BaseNet, LSTM
 from eeg_otta.utils.get_datamodule_cls import get_datamodule_cls
 from eeg_otta.utils.seed import seed_everything
+
 
 CHECKPOINT_PATH = os.path.join(Path(__file__).resolve().parents[1], "checkpoints")
 CONFIG_DIR = os.path.join(Path(__file__).resolve().parents[1], "configs")
 DEFAULT_CONFIG = "bcic2a_loso_basenet.yaml"
 
 
-def train_source_model(config):
+def train_source_model(config, model_cls):
     # get datamodule_cls and model_cls
-    model_cls = BaseNet
     datamodule_cls = get_datamodule_cls(dataset_name=config["dataset_name"])
 
     if config["subject_ids"] == "all":
@@ -77,12 +77,18 @@ def train_source_model(config):
 
 if __name__ == "__main__":
     # parse arguments
+    models = {
+        "base": BaseNet,
+        "lstm": LSTM,
+    }
+
     parser = ArgumentParser()
     parser.add_argument("--config", default=DEFAULT_CONFIG)
+    parser.add_argument("--model", default="base")
     args = parser.parse_args()
 
     # load config
     with open(os.path.join(CONFIG_DIR, args.config)) as f:
         config = yaml.safe_load(f)
 
-    train_source_model(config)
+    train_source_model(config, models[args.model])
