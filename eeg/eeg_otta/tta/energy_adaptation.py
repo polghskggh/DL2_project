@@ -209,7 +209,7 @@ class EnergyAdaptation(TTAMethod):
                 m.track_running_stats = False
                 m.running_mean = None
                 m.running_var = None
-            else:
+            elif self.config.get("train_bn_only"):
                 m.requires_grad_(False)
 
     def forward(self, x, y, train_dataset=None):

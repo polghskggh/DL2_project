@@ -9,6 +9,7 @@ from .base import TTAMethod
 class EntropyMinimization(TTAMethod):
     def __init__(self, model: nn.Module, config: dict, info: mne.Info):
         super(EntropyMinimization, self).__init__(model, config, info)
+        self.adapt = True
 
     def forward_sliding_window(self, x):
         if self.config.get("alignment", False):
@@ -45,7 +46,15 @@ class EntropyMinimization(TTAMethod):
                 m.track_running_stats = False
                 m.running_mean = None
                 m.running_var = None
+            elif self.config.get("train_bn_only"):
+                m.requires_grad_(False)
 
+    def forward(self, x, y=None):
+        if self.adapt:
+            return self.forward_and_adapt(x)
+        else:
+            print('no adapt')
+            return self.forward_sliding_window(x)
 
 @torch.jit.script
 def softmax_entropy(x: torch.Tensor) -> torch.Tensor:

@@ -1,4 +1,4 @@
-source_run: "src-bcic2a_loso_2023-12-04_14-41-13"
+source_run: "src-bcic2a_loso_2025-05-21_15-52-09"
 tta_method: "energy_adaptation"
 continual: false
 tta_config:
@@ -8,7 +8,8 @@ tta_config:
   buffer_length: 32
   optimizer: "Adam"
   optimizer_kwargs:
-    lr: 0.005
+    lr: 0.0005
     beta: 0.9
     weight_decay: 0.0
-  log_name: "energy-pink_noise"
+  log_name: "subject_1-energy"
+  train_bn_only: False

@@ -79,7 +79,7 @@ class TTAMethod(nn.Module):
         elif self.config["optimizer"] == 'SGD':
             return torch.optim.SGD(self.params,
                                    lr=self.config["optimizer_kwargs"]["lr"],
-                                   momentum=self.config["optimizer_kwargs"]["momentum"],
+                                   momentum=self.config["optimizer_kwargs"].get("momentum", 0.0),
                                    weight_decay=self.config["optimizer_kwargs"]["weight_decay"])
         else:
             raise NotImplementedError

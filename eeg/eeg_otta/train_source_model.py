@@ -6,7 +6,8 @@ import yaml
 
 import numpy as np
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+from pytorch_lightning.loggers import WandbLogger
 
 from eeg_otta.models import BaseNet
 from eeg_otta.utils.get_datamodule_cls import get_datamodule_cls
@@ -40,6 +41,16 @@ def train_source_model(config):
     for subject_id in subject_ids:
         seed_everything(config["seed"])
 
+        if (wandb_c := config.get("wandb")) is not None and wandb_c.get("project") is not None:
+            logger = WandbLogger(
+                project=wandb_c["project"],
+                entity=wandb_c.get("entity"),
+                name=run_name,
+                config=config,
+            )
+        else:
+            logger = None
+        
         # set up the trainer
         checkpoint_cb = ModelCheckpoint(
             dirpath=os.path.join(CHECKPOINT_PATH, run_name, str(subject_id)),
@@ -49,10 +60,14 @@ def train_source_model(config):
             save_top_k=1,
             verbose=True
         )
+        callbacks = [checkpoint_cb]
+        if config.get("early_stopping"):
+            callbacks.append(EarlyStopping(monitor="val_acc", patience=25, mode="max"))
+        
         trainer = Trainer(
-            callbacks=[checkpoint_cb],
+            callbacks=callbacks,
             max_epochs=config["max_epochs"],
-            logger=False,
+            logger=logger,
             num_sanity_val_steps=0
         )
 

@@ -103,7 +103,7 @@ def run_adaptation(config):
         'sgld_std': 0.0033756671301297617,
         'reinit_freq': 0.05,
         'adaptation_steps': 3,
-        'energy_real_weight': 1,
+        'energy_real_weight': 0.7,
         'apply_filter': True,
         'align': False,
         'noise_alpha': 1.1021171479575294,

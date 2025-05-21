@@ -33,13 +33,25 @@ class ClassificationModule(pl.LightningModule):
                                          weight_decay=self.hparams.weight_decay)
         else:
             raise NotImplementedError
-        if self.hparams.scheduler:
+        
+        if not self.hparams.scheduler:
+            return [optimizer]
+        
+        if self.hparams.scheduler == "lw_cosine":
             scheduler = LambdaLR(optimizer,
                                  linear_warmup_cosine_decay(self.hparams.warmup_epochs,
                                                             self.hparams.max_epochs))
-            return [optimizer], [scheduler]
+        elif self.hparams.scheduler == "cyclic":
+            scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer,
+                                                         base_lr=self.hparams.lr / 10,
+                                                         max_lr=self.hparams.lr,
+                                                         step_size_up=20,
+                                                         mode="triangular2",
+                                                         cycle_momentum=False)
         else:
-            return [optimizer]
+            raise NotImplementedError(f"Scheduler {self.hparams.scheduler} not implemented")
+            
+        return [optimizer], [scheduler]
 
     def training_step(self, batch, batch_idx):
         loss, acc = self.shared_step(batch, batch_idx, mode="train")
