@@ -19,7 +19,7 @@ DEFAULT_CONFIG = "bcic2a_loso_basenet.yaml"
 
 
 models = {
-    "base": BaseNet,
+    "BaseNet": BaseNet,
     "lstm": LSTM,
 }
 
