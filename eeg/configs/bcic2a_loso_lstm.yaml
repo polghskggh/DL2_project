@@ -1,7 +1,7 @@
 # general
 dataset_name: "bcic2a_loso"
 subject_ids: "all"  # either "all" or integer
-max_epochs: 1000
+max_epochs: 500
 seed: 0
 train_individual: false
 
@@ -20,9 +20,9 @@ model: "lstm"
 model_kwargs:
   n_channels: 22
   lstm_size: 64
-  hidden_size: 64
+  hidden_size: 16
   n_classes: 4
-  dropout: 0.0
+  dropout: 0.05
   lr: 0.01
   weight_decay: 0.001
   optimizer: "adam"

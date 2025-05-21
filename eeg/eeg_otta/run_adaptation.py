@@ -13,6 +13,7 @@ from utils.get_accuracy import get_accuracy
 from utils.get_datamodule_cls import get_datamodule_cls
 from utils.get_tta_cls import get_tta_cls
 from utils.seed import seed_everything
+from train_source_model import models
 
 CHECKPOINT_PATH = os.path.join(Path(__file__).resolve().parents[1], "checkpoints")
 CONFIG_DIR = os.path.join(Path(__file__).resolve().parents[1], "configs")
@@ -31,7 +32,7 @@ def load_config(config):
 def setup(config):
     # load source config
     datamodule_cls = get_datamodule_cls(config["dataset_name"])
-    model_cls = BaseNet
+    model_cls = models[config["model"]]
     tta_cls = get_tta_cls(config["tta_method"])
 
     if config["subject_ids"] == "all":

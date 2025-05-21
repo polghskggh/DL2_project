@@ -51,7 +51,7 @@ def train_source_model(config):
         # set up the trainer
         checkpoint_cb = ModelCheckpoint(
             dirpath=os.path.join(CHECKPOINT_PATH, run_name, str(subject_id)),
-            filename="model",
+            filename="model" if config["train_individual"] else "model-v1",
             monitor="val_acc",
             mode='max',
             save_top_k=1,
