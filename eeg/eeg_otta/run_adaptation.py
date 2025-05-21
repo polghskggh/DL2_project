@@ -110,6 +110,7 @@ def run_adaptation(config):
     }
 
     config['tta_config']['hyperparams'] = hyperparams
+
     model_cls, tta_cls, datamodule = setup(config)
     test_accs, test_acc_logs = calculate_accuracy(model_cls, tta_cls, datamodule, config)
     # print overall test accuracy
