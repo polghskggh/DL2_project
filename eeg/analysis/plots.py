@@ -4,11 +4,10 @@ import numpy as np
 import json
 from collections import defaultdict
 
-def plot_energy_accuracy_loss(log_file_path):
+def plot_energy_accuracy_loss(log_file_path, individual=False):
 
     df = pd.read_csv(log_file_path)
     info_processed = {}
-
 
     for subj_id in list(set(df['subject_id'])):
         info_processed[int(subj_id)] = {
@@ -25,11 +24,20 @@ def plot_energy_accuracy_loss(log_file_path):
 
     # plot
     minmax_norm = lambda data: (data - data.min()) / (data.max() - data.min())
-    fig, axes = plt.subplots(3, 3, figsize=(20, 10))
 
-    for i in range(3):
-        for j in range(3):
-            subj_id = i*3 + j + 1
+    all_subj_id = list(set(df['subject_id']))
+
+    if individual:
+        rows, cols = 2, 4
+    else:
+        rows, cols = 3, 3
+
+    fig, axes = plt.subplots(rows, cols, figsize=(20, 10))
+
+    for i in range(rows):
+        for j in range(cols):
+            subj_id = all_subj_id[i * cols + j] if individual else i * rows + j + 1
+            print(subj_id)
             ax = axes[i, j]
             ax.plot(
                 [i for i in range(1, len(info_processed[subj_id]['energy']) + 1)],
@@ -78,7 +86,7 @@ def plot_energy_accuracy_loss(log_file_path):
                 ax.text(1.1, -0.05, "Acc", transform=ax.transAxes,
                         rotation=0, ha='left', va='top', color='maroon', fontsize=10)
 
-            energy_diff = max(info_processed[i*3 + j + 1]['energy']) - min(info_processed[i*3 + j + 1]['energy'])
+            energy_diff = max(info_processed[subj_id]['energy']) - min(info_processed[subj_id]['energy'])
             ax.set_title(f'Subject ID : {subj_id}, ΔEnergy: {energy_diff:.5f}')
             ax.text(1, -0.05, "Loss", transform=ax.transAxes,
                     rotation=0, ha='left', va='top', color='gray', fontsize=10)
@@ -118,6 +126,7 @@ def plot_accuracy(acc_list, configs):
     plt.show()
 
 def plot_energy_per_batch(log_file_path):
+    minmax_norm = lambda data: (data - data.min()) / (data.max() - data.min())
 
     df = pd.read_csv(log_file_path)
     info_processed = {}
@@ -142,7 +151,7 @@ def plot_energy_per_batch(log_file_path):
                 if batch == 'mean_energy':
                     ax.plot(
                         [i for i in range(1, len(energy_list) + 1)],
-                        energy_list,
+                        minmax_norm(np.array(energy_list)),
                         'x--',
                         label='Mean Energy',
                         linewidth=2
@@ -150,7 +159,7 @@ def plot_energy_per_batch(log_file_path):
                 else:
                     ax.plot(
                         [i for i in range(1, len(energy_list) + 1)],
-                        energy_list,
+                        minmax_norm(np.array(energy_list)),
                         label=f'Batch {batch}',
                         linewidth=2
                     )
@@ -163,7 +172,7 @@ def plot_energy_per_batch(log_file_path):
     plt.tight_layout()
     plt.show()
 
-log_path = 'logged_data.csv'
+log_path = '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/energy_post_no_fake_small_lr.csv'
 plot_energy_per_batch(log_path)
 plot_energy_accuracy_loss(log_path)
 # filepath_lst = [

@@ -24,12 +24,12 @@ class ClassificationModule(pl.LightningModule):
         self.save_hyperparameters(ignore=["model"])
         self.model = model
 
-    def forward(self, x):
-        return self.model(x)
+    def forward(self, x, **kwargs):
+        return self.model(x, **kwargs)
 
     def configure_optimizers(self):
         if self.hparams.optimizer == "adam":
-            optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.lr,
+            optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.lr,
                                          weight_decay=self.hparams.weight_decay)
         else:
             raise NotImplementedError
@@ -47,6 +47,7 @@ class ClassificationModule(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         loss, acc = self.shared_step(batch, batch_idx, mode="val")
+        self.log("val_acc", acc, prog_bar=True, on_epoch=True)
         return {"val_loss": loss, "val_acc": acc}
 
     def test_step(self, batch, batch_idx):

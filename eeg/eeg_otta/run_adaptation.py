@@ -41,7 +41,8 @@ def setup(config):
 
     config["subject_ids"] = subject_ids
 
-    config["preprocessing"]["alignment"] = False
+    if config["tta_config"]["alignment"]:
+        config["preprocessing"]["alignment"] = False
 
     datamodule = datamodule_cls(config["preprocessing"], subject_ids=subject_ids)
     return model_cls, tta_cls, datamodule
@@ -52,17 +53,31 @@ def calculate_accuracy(model_cls, tta_cls, datamodule, config):
 
     cal_accs, test_accs = [], []
     test_acc_logs = {}
-    for version, subject_id in enumerate(config['subject_ids']):
+
+    config['train_individual'] = config.get("train_individual", False)
+
+    subject_id_lst = [_id for _id in datamodule.all_subject_ids if _id not in config["subject_ids"]] \
+        if config['train_individual'] \
+        else config["subject_ids"]
+
+    for version, subject_id in enumerate(subject_id_lst):
         seed_everything(config["seed"])
 
         # load checkpoint
-        ckpt_path = os.path.join(CHECKPOINT_PATH, config["source_run"], str(subject_id),
-                                 "model-v1.ckpt")
+        ckpt_path = os.path.join(CHECKPOINT_PATH, config["source_run"],
+                                 str(config["subject_ids"][0]) if config['train_individual'] else str(subject_id),
+                                 "model.ckpt" if config['train_individual'] else "model-v1.ckpt")
         model = model_cls.load_from_checkpoint(ckpt_path, map_location=device)
 
         # set subject_id
         datamodule.subject_id = subject_id
         config['tta_config']['subject_id'] = subject_id
+        config['tta_config']['preprocessing'] = config['preprocessing']
+        if config['train_individual']:
+            config['tta_config']['initialise_log'] = version == 0
+        else:
+            config['tta_config']['initialise_log'] = subject_id == 1
+        
         datamodule.prepare_data()
         datamodule.setup()
 
@@ -83,12 +98,15 @@ def run_adaptation(config):
     config = load_config(config)
 
     hyperparams = {
-        'sgld_steps': 20,
-        'sgld_lr': 0.1,
-        'sgld_std': 0.01,
+        'sgld_steps': 26,
+        'sgld_lr': 0.03098715690500288,
+        'sgld_std': 0.0033756671301297617,
         'reinit_freq': 0.05,
-        'adaptation_steps': 20,
-        'energy_real_weight': 0.5
+        'adaptation_steps': 3,
+        'energy_real_weight': 1,
+        'apply_filter': True,
+        'align': False,
+        'noise_alpha': 1.1021171479575294,
     }
 
     config['tta_config']['hyperparams'] = hyperparams
@@ -98,31 +116,35 @@ def run_adaptation(config):
     # print overall test accuracy
     print(f"test_acc: {100 * np.mean(test_accs):.2f}")
 
-    with open(f'./logs/{config["source_run"]}_{config["tta_method"]}_accuracy.json', 'w') as f:
+    with open(f'./logs/{config["source_run"]}_{config["tta_config"]["log_name"]}_accuracy.json', 'w') as f:
         json.dump(test_acc_logs, f)
 
-def tune(config):
+def tune(config, n_trials=1):
     def objective(trial):
         hyperparams = {
-            'sgld_steps': trial.suggest_int("sgld_steps", 5, 200),
-            'sgld_lr': trial.suggest_float("sgld_lr", 1e-5, 1, log=True),
-            'sgld_std': trial.suggest_float("sgld_std", 1e-5, 1),
-            'reinit_freq': trial.suggest_float("reinit_freq", 1e-5, 1),
-            'adaptation_steps': trial.suggest_int("adaptation_steps", 1, 40),
-            'energy_real_weight': trial.suggest_float('energy_real_weight', 1e-5, 1)
+            'sgld_steps': trial.suggest_int('sgld_steps', 10, 30),
+            'sgld_lr': trial.suggest_float('sgld_lr', 1e-2, 3, log=True),
+            'sgld_std': trial.suggest_float('sgld_std', 1e-3, 1e-1, log=True),
+            'reinit_freq': 0.05,
+            'adaptation_steps': trial.suggest_int('adaptation_steps', 1, 8),
+            'energy_real_weight': trial.suggest_float('energy_real_weight', 1e-1, 1),
+            'apply_filter': True,
+            'align':False,
+            'noise_alpha': trial.suggest_float('noise_alpha', 0.0, 1.5),
         }
-        optimizer = trial.suggest_categorical("optimizer", ["SGD", "Adam"])
-
+        batch_size = trial.suggest_categorical("batch_size", [32, 64, 128, 288])
+        
+        # optimizer = trial.suggest_categorical("optimizer", ["SGD", "Adam"])
         optimizer_kwargs = {
-            'lr': trial.suggest_float('lr', 1e-5, 1e-1, log=True),
-            'weight_decay': trial.suggest_float('weight_decay', 1e-6, 1e-1, log=True),
-            'momentum': trial.suggest_float('momentum', 0.8, 0.99),
+            'lr': trial.suggest_float('lr', 1e-4, 3e-2, log=True),
+            'weight_decay': trial.suggest_float('weight_decay', 1e-6, 1e-2, log=True),
+            # 'momentum': trial.suggest_float('momentum', 0.8, 0.99),
         }
 
         config_local = load_config(config)
-
+        config_local["preprocessing"]["batch_size"] = batch_size
         config_local['tta_config']['hyperparams'] = hyperparams
-        config_local['tta_config']['optimizer'] = optimizer
+        # config_local['tta_config']['optimizer'] = optimizer
         config_local['tta_config']['optimizer_kwargs'] = optimizer_kwargs
         model_cls, tta_cls, datamodule = setup(config_local)
         test_accs, _ = calculate_accuracy(model_cls, tta_cls, datamodule, config_local)
@@ -144,6 +166,7 @@ if __name__ == "__main__":
     parser.add_argument("--config", default=DEFAULT_CONFIG)
     parser.add_argument("--online", default=False, action="store_true")
     parser.add_argument("--tune", default=False, action="store_true")
+    parser.add_argument("--trials", default=1, type=int)
     args = parser.parse_args()
 
     # load config
@@ -152,6 +175,6 @@ if __name__ == "__main__":
 
     config["online"] = args.online
     if args.tune:
-        tune(config)
+        tune(config, n_trials=args.trials)
     else:
         run_adaptation(config)
