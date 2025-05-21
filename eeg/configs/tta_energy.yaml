@@ -1,4 +1,4 @@
-source_run: "src-bcic2a_loso_2023-12-04_14-41-13"
+source_run: "src-bcic2a_loso_2023-12-04_14-40-57"
 tta_method: "energy_adaptation"
 continual: false
 tta_config:

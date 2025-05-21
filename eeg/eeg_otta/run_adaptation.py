@@ -103,7 +103,7 @@ def run_adaptation(config):
         'sgld_std': 0.0033756671301297617,
         'reinit_freq': 0.05,
         'adaptation_steps': 3,
-        'energy_real_weight': 1,
+        'energy_real_weight': 0.5,
         'apply_filter': True,
         'align': False,
         'noise_alpha': 1.1021171479575294,
@@ -129,7 +129,7 @@ def tune(config, n_trials=1):
             'adaptation_steps': trial.suggest_int('adaptation_steps', 1, 8),
             'energy_real_weight': trial.suggest_float('energy_real_weight', 1e-1, 1),
             'apply_filter': True,
-            'align':False,
+            'align': False,
             'noise_alpha': trial.suggest_float('noise_alpha', 0.0, 1.5),
         }
         batch_size = trial.suggest_categorical("batch_size", [32, 64, 128, 288])
@@ -167,6 +167,7 @@ if __name__ == "__main__":
     parser.add_argument("--online", default=False, action="store_true")
     parser.add_argument("--tune", default=False, action="store_true")
     parser.add_argument("--trials", default=1, type=int)
+    parser.add_argument("--plot", default=False, action="store_true")
     args = parser.parse_args()
 
     # load config

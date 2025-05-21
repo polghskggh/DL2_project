@@ -183,8 +183,6 @@ class EnergyAdaptation(TTAMethod):
             #     accuracy = (outputs.argmax(-1).cpu() == y).float().numpy().mean()
             #     logs.append((self.subject_id, self.batch, step, loss.item(), energy_real.item(), accuracy))
 
-
-
     def adapt_data(self, x, model):
         batch_size = x.shape[0]
         n_channels = x.shape[1]
