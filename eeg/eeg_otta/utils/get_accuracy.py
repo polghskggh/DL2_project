@@ -3,6 +3,16 @@ from tqdm import tqdm
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
+import numpy as np
+
+def corrupt(x, severity=5):
+
+    stds = [8, 12, 18, 26, 38]
+    std = stds[severity - 1]
+
+    noise = torch.randn_like(x).to(x.device) * std
+    corrupted = x + noise
+    return corrupted
 
 
 def get_accuracy(model: nn.Module, data_loader: DataLoader, device: torch.device):
@@ -10,6 +20,8 @@ def get_accuracy(model: nn.Module, data_loader: DataLoader, device: torch.device
     with torch.no_grad():
         for batch in tqdm(data_loader):
             x, y = batch
+            x = corrupt(x)
+
             output = torch.softmax(model(x.to(device), y), -1)
             outputs.append(output)
             labels.append(y)

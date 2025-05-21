@@ -163,7 +163,7 @@ def plot_energy_per_batch(log_file_path):
     plt.tight_layout()
     plt.show()
 
-log_path = '../logged_data.csv'
+log_path = 'logged_data.csv'
 plot_energy_per_batch(log_path)
 plot_energy_accuracy_loss(log_path)
 # filepath_lst = [
