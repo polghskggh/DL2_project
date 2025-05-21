@@ -19,10 +19,10 @@ preprocessing:
 model: "lstm"
 model_kwargs:
   n_channels: 22
-  lstm_size: 64
+  lstm_size: 32
   hidden_size: 16
   n_classes: 4
-  dropout: 0.05
+  dropout: 0.1
   lr: 0.01
   weight_decay: 0.001
   optimizer: "adam"

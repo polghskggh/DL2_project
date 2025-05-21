@@ -28,26 +28,29 @@ class LSTMCore(nn.Module):
 
     def __init__(self, n_channels, lstm_size, hidden_size, n_classes, dropout=0.25):
         super().__init__()
-        self.lstm = nn.LSTM(input_size=n_channels, hidden_size=lstm_size, batch_first=True, dropout=dropout, bidirectional=True)
+        self.lstm = nn.LSTM(input_size=n_channels, hidden_size=lstm_size, batch_first=True, bidirectional=True)
 
         self.rearrange_input = Rearrange("b c t -> b t c")
-        self.fc1 = nn.Linear(lstm_size, hidden_size)
-        self.bn1 = nn.BatchNorm1d(hidden_size)
         self.dropout = nn.Dropout(dropout)
-
+        
+        self.bn1 = nn.BatchNorm1d(2 * lstm_size)
+        self.fc1 = nn.Linear(2 * lstm_size, hidden_size)
+        self.bn2 = nn.BatchNorm1d(hidden_size)
         self.fc2 = nn.Linear(hidden_size, n_classes)
 
     def forward(self, x):
         # Input: (batch, n_input, time)
 
         x = self.rearrange_input(x)
-        lstm_out, (h_n, _) = self.lstm(x)  # h_n: (1, batch, lstm_size)
-        final_hidden = h_n[-1]  # (batch, lstm_size)
+        lstm_out, _ = self.lstm(x)  # h_n: (1, batch, lstm_size)
+        series_embed = lstm_out.amax(dim=1)  # (batch, lstm_size)
+        series_embed = self.bn1(series_embed)
+        series_embed = self.dropout(series_embed)
 
-        fc1_out = self.fc1(final_hidden)
+        fc1_out = self.fc1(series_embed)
+        fc1_out = self.bn2(fc1_out)
         fc1_out = F.softplus(fc1_out)
         fc1_out = self.dropout(fc1_out)
-        fc1_out = self.bn1(fc1_out)
 
         logits = self.fc2(fc1_out)  # (batch, n_classes)
         return logits

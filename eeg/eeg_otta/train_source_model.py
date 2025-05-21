@@ -75,7 +75,7 @@ def train_source_model(config):
         for i in datamodule_cls.all_subject_ids:
             if i not in subject_ids:
                 datamodule.subject_id = i
-                test_results = trainer.test(model, datamodule)
+                test_results = trainer.test("best", datamodule)
                 test_accs.append(test_results[0]["test_acc"])
 
                 print(f"source accuracy subject {i}: {100 *test_accs[-1]:.2f}%")
