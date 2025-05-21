@@ -1,7 +1,7 @@
 # general
 dataset_name: "bcic2a_loso"
 subject_ids: "all"  # either "all" or integer
-max_epochs: 500
+max_epochs: 1000
 seed: 0
 train_individual: false
 
@@ -22,10 +22,10 @@ model_kwargs:
   lstm_size: 32
   hidden_size: 16
   n_classes: 4
-  dropout: 0.1
-  lr: 0.01
+  dropout: 0.25
+  lr: 0.005
   weight_decay: 0.001
   optimizer: "adam"
-  scheduler: False
-  warmup_epochs: 20
-  label_smoothing: 0.0
+  scheduler: false
+  warmup_epochs: 50
+  label_smoothing: 0.1

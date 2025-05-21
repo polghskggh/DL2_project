@@ -1,17 +1,17 @@
 dataset_name: bcic2a_loso
-max_epochs: 500
+max_epochs: 1000
 model: lstm
 model_kwargs:
-  dropout: 0.05
+  dropout: 0.25
   hidden_size: 16
-  label_smoothing: 0.0
-  lr: 0.01
-  lstm_size: 64
+  label_smoothing: 0.1
+  lr: 0.005
+  lstm_size: 32
   n_channels: 22
   n_classes: 4
   optimizer: adam
   scheduler: false
-  warmup_epochs: 20
+  warmup_epochs: 50
   weight_decay: 0.001
 preprocessing:
   alignment: riemann
