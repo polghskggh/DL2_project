@@ -55,7 +55,6 @@ def calculate_accuracy(model_cls, tta_cls, datamodule, config):
     test_acc_logs = {}
 
     config['train_individual'] = config.get("train_individual", False)
-
     subject_id_lst = [_id for _id in datamodule.all_subject_ids if _id not in config["subject_ids"]] \
         if config['train_individual'] \
         else config["subject_ids"]
@@ -98,11 +97,11 @@ def run_adaptation(config):
     config = load_config(config)
 
     hyperparams = {
-        'sgld_steps': 26,
+        'sgld_steps': 10,
         'sgld_lr': 0.03098715690500288,
-        'sgld_std': 0.0033756671301297617,
+        'sgld_std': 0.33756671301297617,
         'reinit_freq': 0.05,
-        'adaptation_steps': 3,
+        'adaptation_steps': 8,
         'energy_real_weight': 1,
         'apply_filter': True,
         'align': False,

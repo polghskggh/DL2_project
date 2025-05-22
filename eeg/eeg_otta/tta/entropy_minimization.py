@@ -9,6 +9,7 @@ from .base import TTAMethod
 class EntropyMinimization(TTAMethod):
     def __init__(self, model: nn.Module, config: dict, info: mne.Info):
         super(EntropyMinimization, self).__init__(model, config, info)
+        self.adapt = True
 
     def forward_sliding_window(self, x):
         if self.config.get("alignment", False):
@@ -30,10 +31,11 @@ class EntropyMinimization(TTAMethod):
                 self.config.get("align_alpha", None))
 
         outputs = self.model(x)
-        loss = softmax_entropy(outputs).mean(0)
-        loss.backward()
-        self.optimizer.step()
-        self.optimizer.zero_grad()
+        if self.adapt:
+            loss = softmax_entropy(outputs).mean(0)
+            loss.backward()
+            self.optimizer.step()
+            self.optimizer.zero_grad()
         return outputs
 
     def configure_model(self):

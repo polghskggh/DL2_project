@@ -61,7 +61,9 @@ class EnergyAdaptation(TTAMethod):
 
     @staticmethod
     def init_random(bs, series_length=1000, n_channels=22):
-        return torch.normal(0, 0.0363, size=(bs, n_channels, series_length))
+        return torch.FloatTensor(bs, n_channels, series_length).uniform_(-1, 1)
+
+        #torch.normal(0, 0.0363, size=(bs, n_channels, series_length)))
 
     @staticmethod
     def generate_pink_noise(bs: int, series_length: int, n_channels: int, alpha: float = 1) -> torch.Tensor:
@@ -126,7 +128,7 @@ class EnergyAdaptation(TTAMethod):
 
         for k in range(sgld_steps):
             f_prime = torch.autograd.grad(self.energy_model(x_k, y=y)[0].sum(), [x_k], retain_graph=True)[0]
-            x_k.data -= sgld_lr * f_prime + sgld_std * self.generate_pink_noise(bs, series_length, n_channels, alpha=noise_alpha).to(self.device)                
+            x_k.data -= sgld_lr * f_prime + sgld_std * self.generate_pink_noise(bs, series_length, n_channels, alpha=noise_alpha).to(self.device)
         # self.energy_model.train()
         final_samples = x_k.detach()
 
@@ -179,10 +181,8 @@ class EnergyAdaptation(TTAMethod):
         energy_real = out_real[0].mean()
 
         # adapt
-        self.optimizer.zero_grad()
-
         if alpha != 1:
-            loss = alpha * energy_real - (1 - alpha) * energy_fake
+            loss = alpha * energy_real - (1-alpha) * energy_fake
         else:
             loss = energy_real
 
@@ -193,10 +193,10 @@ class EnergyAdaptation(TTAMethod):
             accuracy = (self.energy_model.classify(x).argmax(-1).cpu() == y).float().numpy().mean()
             with open(self.csv_file, mode='a') as file:
                 writer = csv.writer(file)
-                writer.writerows([(self.subject_id, self.batch, self.step, loss.item(), energy_real.item(), accuracy)])
+                writer.writerows([(self.subject_id, self.batch, self.step, (energy_real - energy_fake).item(), energy_real.item(), accuracy)])
 
         outputs = self.energy_model.classify(x)
-
+        self.optimizer.zero_grad()
         return outputs
 
     def configure_model(self):
@@ -210,8 +210,8 @@ class EnergyAdaptation(TTAMethod):
                 m.running_mean = None
                 m.running_var = None
             else:
-                m.requires_grad_(False)
+                m.requires_grad_(True)
 
-    def forward(self, x, y):
-        return self.forward_and_adapt(x, y, train_dataset=train_dataset))
+    def forward(self, x, y, train_dataset=None):
+        return self.forward_and_adapt(x, y, train_dataset=train_dataset)
 
