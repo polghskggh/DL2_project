@@ -1,0 +1,39 @@
+dataset_name: bcic2a_loso
+early_stopping: false
+max_epochs: 1000
+model: BaseNet
+model_kwargs:
+  ch_dim: 16
+  dropout: 0.25
+  dropout_inp: 0.25
+  input_window_samples: 1000
+  label_smoothing: 0.0
+  lr: 0.01
+  n_channels: 22
+  n_classes: 4
+  n_temporal_filters: 40
+  optimizer: adam
+  pool_length: 8
+  pool_length_inp: 75
+  pool_stride: 8
+  pool_stride_inp: 15
+  scheduler: cyclic
+  spatial_expansion: 1
+  temp_filter_length: 15
+  temp_filter_length_inp: 25
+  warmup_epochs: 20
+  weight_decay: 0.01
+preprocessing:
+  alignment: riemann
+  batch_size: 64
+  high_cut: 40
+  low_cut: 0
+  sfreq: 250
+  start: 0.0
+  stop: 0.0
+seed: 0
+subject_ids: 1
+train_individual: true
+wandb:
+  entity: leonardhorns
+  project: dl2

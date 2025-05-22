@@ -25,8 +25,10 @@ def train_source_model(config):
 
     if config["subject_ids"] == "all":
         subject_ids = datamodule_cls.all_subject_ids
-    else:
+    elif isinstance(config["subject_ids"], int):
         subject_ids = [config["subject_ids"]]
+    else:
+        subject_ids = config["subject_ids"]
     datamodule = datamodule_cls(config["preprocessing"], subject_ids=subject_ids)
 
     test_accs = []
@@ -86,6 +88,9 @@ def train_source_model(config):
                 test_accs.append(test_results[0]["test_acc"])
 
                 print(f"source accuracy subject {i}: {100 *test_accs[-1]:.2f}%")
+        
+        if config["train_individual"]:
+            break
 
     print(f"source accuracy: {100 *np.mean(test_accs):.2f}%")
 

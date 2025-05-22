@@ -109,16 +109,27 @@ class BCICIV2aLOSO(BaseDataModule):
             if self.train_individual:
                 print('training for one subject')
                 test_subjects = [
-                    subj_id for subj_id in self.all_subject_ids if subj_id != self.subject_id]
+                    subj_id for subj_id in self.all_subject_ids if subj_id != self.subject_ids]
                 test_datasets_T = [splitted_ds[str(subj_id)].split("session")["session_T"]
                                   for subj_id in test_subjects]
                 test_datasets = [splitted_ds[str(subj_id)].split("session")["session_E"]
                                 for subj_id in test_subjects]
-                train_subjects = [self.subject_id]
-                train_datasets = splitted_ds[str(self.subject_id)].split("session")["session_T"]
-                val_datasets = splitted_ds[str(self.subject_id)].split("session")["session_E"]
+                train_subjects = self.subject_ids
+                train_datasets = [splitted_ds[str(subj_id)].split("session")["session_T"]
+                                  for subj_id in train_subjects]
+                val_datasets = [splitted_ds[str(subj_id)].split("session")["session_E"]
+                                for subj_id in train_subjects]
 
                 # load the data
+                X = np.concatenate([run.windows._data for train_dataset in
+                                    train_datasets for run in train_dataset.datasets], axis=0)
+                y = np.concatenate([run.y for train_dataset in train_datasets for run in
+                                    train_dataset.datasets], axis=0)
+                X_val = np.concatenate([run.windows._data for val_dataset in
+                                    val_datasets for run in val_dataset.datasets], axis=0)
+                y_val = np.concatenate([run.y for val_dataset in val_datasets for run in
+                                    val_dataset.datasets], axis=0)
+                
                 X_test_T = np.concatenate([run.windows._data for test_dataset in
                                     test_datasets_T for run in test_dataset.datasets], axis=0)
                 y_test_T = np.concatenate([run.y for test_dataset in test_datasets_T for run in
@@ -129,20 +140,20 @@ class BCICIV2aLOSO(BaseDataModule):
                 y_test = np.concatenate([run.y for test_dataset in test_datasets for run in
                                            test_dataset.datasets], axis=0)
 
-                X = np.concatenate([run.windows._data for run in
-                                           train_datasets.datasets], axis=0)
-                y = np.concatenate([run.y for run in train_datasets.datasets], axis=0)
+                # X = np.concatenate([run.windows._data for run in
+                #                            train_datasets.datasets], axis=0)
+                # y = np.concatenate([run.y for run in train_datasets.datasets], axis=0)
 
-                X_val = np.concatenate([run.windows._data for run in val_datasets.datasets],
-                                        axis=0)
-                y_val = np.concatenate([run.y for run in val_datasets.datasets], axis=0)
+                # X_val = np.concatenate([run.windows._data for run in val_datasets.datasets],
+                #                         axis=0)
+                # y_val = np.concatenate([run.y for run in val_datasets.datasets], axis=0)
 
                 train_domains = np.concatenate(
                     [[subject_id] * ds.cummulative_sizes[-1] for (ds, subject_id) in
-                     zip([train_datasets], train_subjects)])
+                     zip(train_datasets, train_subjects)])
                 val_domains = np.concatenate(
                     [[subject_id] * ds.cummulative_sizes[-1] for (ds, subject_id) in
-                     zip([val_datasets], train_subjects)])
+                     zip(val_datasets, train_subjects)])
             else:
                 train_subjects = [
                     subj_id for subj_id in self.all_subject_ids if subj_id != self.subject_id]
