@@ -6,7 +6,7 @@ import yaml
 
 import numpy as np
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 
 from eeg_otta.models import BaseNet
 from eeg_otta.utils.get_datamodule_cls import get_datamodule_cls
@@ -14,7 +14,7 @@ from eeg_otta.utils.seed import seed_everything
 
 CHECKPOINT_PATH = os.path.join(Path(__file__).resolve().parents[1], "checkpoints")
 CONFIG_DIR = os.path.join(Path(__file__).resolve().parents[1], "configs")
-DEFAULT_CONFIG = "bcic2a_loso_basenet.yaml"
+DEFAULT_CONFIG = "main_train.yaml"
 
 
 def train_source_model(config):
@@ -49,6 +49,7 @@ def train_source_model(config):
             save_top_k=1,
             verbose=True
         )
+
         trainer = Trainer(
             callbacks=[checkpoint_cb],
             max_epochs=config["max_epochs"],
@@ -58,7 +59,7 @@ def train_source_model(config):
 
         # set subject_id
         datamodule.subject_id = subject_id
-        datamodule.train_individual = config["train_individual"]
+        datamodule.train_individual = False
         # train model
         model = model_cls(**config["model_kwargs"], max_epochs=config["max_epochs"])
         trainer.fit(model, datamodule=datamodule)

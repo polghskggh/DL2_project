@@ -1,4 +1,4 @@
-source_run: "src-bcic2b_within_2023-12-04_18-31-55"
+source_run: "2alaso"
 tta_method: "energy_adaptation"
 continual: false
 tta_config:

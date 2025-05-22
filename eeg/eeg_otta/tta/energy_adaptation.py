@@ -193,7 +193,8 @@ class EnergyAdaptation(TTAMethod):
             accuracy = (self.energy_model.classify(x).argmax(-1).cpu() == y).float().numpy().mean()
             with open(self.csv_file, mode='a') as file:
                 writer = csv.writer(file)
-                writer.writerows([(self.subject_id, self.batch, self.step, (energy_real - energy_fake).item(), energy_real.item(), accuracy)])
+                delta = (energy_real - energy_fake).item() if alpha != 1 else 0
+                writer.writerows([(self.subject_id, self.batch, self.step, delta, energy_real.item(), accuracy)])
 
         outputs = self.energy_model.classify(x)
         self.optimizer.zero_grad()
