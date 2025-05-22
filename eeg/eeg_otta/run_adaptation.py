@@ -36,8 +36,10 @@ def setup(config):
 
     if config["subject_ids"] == "all":
         subject_ids = datamodule_cls.all_subject_ids
-    else:
+    elif isinstance(config["subject_ids"], int):
         subject_ids = [config["subject_ids"]]
+    else:
+        subject_ids = config["subject_ids"]
 
     config["subject_ids"] = subject_ids
 
