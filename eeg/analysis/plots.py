@@ -118,23 +118,26 @@ def plot_energy_accuracy_loss(log_file_path, individual=False):
 
 def plot_accuracy(acc_list, configs):
 
-    all_subj_ids = sorted({subj_id for acc in acc_list for subj_id in acc})
+    all_subj_ids = sorted({subj_id for accs in acc_list for acc in accs for subj_id in acc})
     x = np.arange(len(all_subj_ids))  # the label locations
     width = 0.8 / len(configs)  # width of the bars (divided for group)
 
     plt.figure(figsize=(10, 6))
 
-    for i, (acc, config) in enumerate(zip(acc_list, configs)):
-        acc_vals = []
-        for subj_id in all_subj_ids:
-            val = acc.get(subj_id, np.nan)
-            if isinstance(val, dict):
-                acc_vals.append(val.get('test_acc', np.nan))
-            else:
-                acc_vals.append(val)
-
-        print(f'avg acc {config} : {np.nanmean(acc_vals)}')
-        plt.bar(x + i * width, acc_vals, width, label=config)
+    for i, (accs, config) in enumerate(zip(acc_list, configs)):
+        acc_vals = defaultdict(list)
+        for acc in accs:
+            for subj_id in all_subj_ids:
+                val = acc.get(subj_id, np.nan)
+                if isinstance(val, dict):
+                    acc_vals[subj_id].append(val.get('test_acc', np.nan))
+                else:
+                    acc_vals[subj_id].append(val)
+        val_out = []
+        for val_acc in acc_vals.values():
+            val_out.append(np.mean(val_acc))
+        print(f'avg acc {config} : {np.nanmean(val_out)}')
+        plt.bar(x + i * width, val_out, width, label=config)
 
     plt.xlabel('Subj id')
     plt.ylabel('Accuracy')
@@ -192,17 +195,18 @@ def plot_energy_per_batch(log_file_path):
 
 model = 'b_within'
 adaptation = 'energy-corruption-b-sev-1'
-log_path = f'./eeg/logs/{model}/{adaptation}/adapt_info_0.csv'
+log_path = f'./logs/{model}/{adaptation}/adapt_info_0.csv'
 plot_energy_accuracy_loss(log_path)
-# filepath_lst = [
-#     '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/src-bcic2b_within_2023-12-04_18-31-55_no_adaptation-b-sev-5_accuracy.json',
-#     '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/src-bcic2b_within_2023-12-04_18-31-55_entropy_min_corrupt-b-sev-5_accuracy.json',
-# '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/src-bcic2b_within_2023-12-04_18-31-55_energy-corruption-b-sev-5-full_accuracy.json']
-# configs = ['source', 'entropy minimization', 'energy']
-# acc_list = []
-#
-# for filepath in filepath_lst:
-#     with open(filepath, 'r') as f:
-#         acc_list.append(json.load(f))
 
-#plot_accuracy(acc_list, configs)
+configs = ['source', 'entropy minimization', 'energy']
+adaptations = ["no_adaptation-b-sev-1", "entropy_min_corrupt-b-sev-1", "energy-corruption-b-sev-1"]
+acc_list = []
+for adaptation in adaptations:
+    cur_acc = []
+    for i in range(3):
+        path = f'./logs/{model}/{adaptation}/accuracy_{i}.json'
+        with open(path, 'r') as f:
+            cur_acc.append(json.load(f))
+    acc_list.append(cur_acc)
+
+plot_accuracy(acc_list, configs)
