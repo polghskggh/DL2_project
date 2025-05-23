@@ -1,4 +1,4 @@
-dataset_name: bcic2a_loso
+dataset_name: bcic2a_within
 max_epochs: 1000
 model: BaseNet
 model_kwargs:
