@@ -1,5 +1,5 @@
 # general
-dataset_name: "bcic2a_loso"
+dataset_name: "bcic2a_within"
 subject_ids: "all"
 max_epochs: 1000
 seed: 0
