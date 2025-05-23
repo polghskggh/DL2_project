@@ -40,7 +40,7 @@ class EnergyAdaptation(TTAMethod):
         self.subject_id = config['subject_id']
         self.batch = 0
         self.step = 0
-        self.csv_file = f'./logs/{config["log_name"]}.csv'
+        self.csv_file = f'{config["save_dir"]}/adapt_info_{config["seed"]}.csv'
         self.adapt= True
         header = ['subject_id', 'batch', 'adaptation_step', 'loss', 'energy','accuracy']
         if config['initialise_log']:
@@ -170,7 +170,7 @@ class EnergyAdaptation(TTAMethod):
         device = x.device
 
         alpha = self.hyperparams['energy_real_weight']
-
+        energy_fake = 0
         if alpha != 1:
             x_fake, _ = self.sample_q(**self.hyperparams, batch_size=batch_size, series_length=series_length,
                                       n_channels=n_channels, device=device, y=None)
@@ -210,7 +210,7 @@ class EnergyAdaptation(TTAMethod):
                 m.running_mean = None
                 m.running_var = None
             else:
-                m.requires_grad_(True)
+                m.requires_grad_(False)
 
     def forward(self, x, y, train_dataset=None):
         return self.forward_and_adapt(x, y, train_dataset=train_dataset)

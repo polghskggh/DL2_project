@@ -9,6 +9,7 @@ def plot_energy_accuracy_loss(log_file_path, individual=False):
     df = pd.read_csv(log_file_path)
     info_processed = {}
 
+
     for subj_id in list(set(df['subject_id'])):
         info_processed[int(subj_id)] = {
             'energy' : [],
@@ -16,11 +17,24 @@ def plot_energy_accuracy_loss(log_file_path, individual=False):
             'loss': []
         }
 
+        cur_batch = 0
+        cur_step = 1
+        for idx, row in df.iterrows():
+            if row['subject_id'] == subj_id:
+                df.loc[idx, 'batch'] = cur_batch
+                df.loc[idx, 'adaptation_step'] = cur_step
+                cur_batch += 1
+
+                if cur_batch % 5 == 0:
+                    cur_step += 1
+                    cur_batch = 0
+
         for step in list(set(df['adaptation_step'])):
-            cur_df = df[(df['subject_id'] == subj_id) & (df['adaptation_step'] == step)]
-            info_processed[subj_id]['energy'].append(cur_df['energy'].mean())
-            info_processed[subj_id]['loss'].append(cur_df['loss'].mean())
-            info_processed[subj_id]['accuracy'].append(cur_df['accuracy'].mean())
+            if step != 0:
+                cur_df = df[(df['subject_id'] == subj_id) & (df['adaptation_step'] == step)]
+                info_processed[subj_id]['energy'].append(cur_df['energy'].mean())
+                info_processed[subj_id]['loss'].append(cur_df['loss'].mean())
+                info_processed[subj_id]['accuracy'].append(cur_df['accuracy'].mean())
 
     # plot
     minmax_norm = lambda data: (data - data.min()) / (data.max() - data.min())
@@ -176,18 +190,19 @@ def plot_energy_per_batch(log_file_path):
     plt.tight_layout()
     plt.show()
 
-log_path = '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/energy-corruption-b-sev-5-full-2.csv'
-#plot_energy_per_batch(log_path)
+model = 'b_within'
+adaptation = 'energy-corruption-b-sev-1'
+log_path = f'./eeg/logs/{model}/{adaptation}/adapt_info_0.csv'
 plot_energy_accuracy_loss(log_path)
-filepath_lst = [
-    '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/src-bcic2b_within_2023-12-04_18-31-55_no_adaptation-b-sev-3_accuracy.json',
-    '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/src-bcic2b_within_2023-12-04_18-31-55_entropy_min_corrupt-b-sev-3_accuracy.json',
-'/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/src-bcic2b_within_2023-12-04_18-31-55_energy-corruption-b-sev-3-full_accuracy.json']
-configs = ['source', 'entropy minimization', 'energy']
-acc_list = []
+# filepath_lst = [
+#     '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/src-bcic2b_within_2023-12-04_18-31-55_no_adaptation-b-sev-5_accuracy.json',
+#     '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/src-bcic2b_within_2023-12-04_18-31-55_entropy_min_corrupt-b-sev-5_accuracy.json',
+# '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/src-bcic2b_within_2023-12-04_18-31-55_energy-corruption-b-sev-5-full_accuracy.json']
+# configs = ['source', 'entropy minimization', 'energy']
+# acc_list = []
+#
+# for filepath in filepath_lst:
+#     with open(filepath, 'r') as f:
+#         acc_list.append(json.load(f))
 
-for filepath in filepath_lst:
-    with open(filepath, 'r') as f:
-        acc_list.append(json.load(f))
-
-plot_accuracy(acc_list, configs)
+#plot_accuracy(acc_list, configs)

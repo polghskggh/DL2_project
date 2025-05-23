@@ -1,4 +1,4 @@
-source_run: "src-bcic2b_within_2023-12-04_18-31-55"
+source_run: "b_within"
 tta_method: "no_adaptation"
 continual: false
 tta_config:
@@ -11,4 +11,4 @@ tta_config:
     lr: 0.0005
     beta: 0.9
     weight_decay: 0.0
-  log_name: "no_adaptation-b-sev-5"
+  log_name: "no_adaptation-b-sev-1"

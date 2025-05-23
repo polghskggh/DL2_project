@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 
 def corrupt(x, severity=5):
 
-    stds = [0.1, 0.2, 3, 10, 40]
+    stds = [0.1, 1, 10, 20, 40]
     std = stds[severity - 1]
 
     noise = torch.randn_like(x).to(x.device) * std
@@ -22,7 +22,7 @@ def get_accuracy(model: nn.Module, data_loader: DataLoader, device: torch.device
             model.adapt = True
             for batch in tqdm(data_loader):
                 x, y = batch
-                x = corrupt(x, severity=5)
+                x = corrupt(x, severity=1)
                 output = torch.softmax(model(x.to(device), y), -1)
 
             model.adapt = False
@@ -30,7 +30,7 @@ def get_accuracy(model: nn.Module, data_loader: DataLoader, device: torch.device
                 model.batch = 0
             for batch in tqdm(data_loader):
                 x, y = batch
-                x = corrupt(x, severity=5)
+                x = corrupt(x, severity=1)
                 output = torch.softmax(model(x.to(device), y), -1)
 
                 if step == getattr(model, 'hyperparams', {}).get('adaptation_steps', 1) - 1:

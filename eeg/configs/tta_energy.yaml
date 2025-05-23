@@ -1,4 +1,4 @@
-source_run: "src-bcic2b_within_2023-12-04_18-31-55"
+source_run: "b_within"
 tta_method: "energy_adaptation"
 continual: false
 tta_config:
@@ -8,7 +8,7 @@ tta_config:
   buffer_length: 32
   optimizer: "Adam"
   optimizer_kwargs:
-    lr: 0.0005
+    lr: 0.001
     beta: 0.9
     weight_decay: 0.0
-  log_name: "energy-corruption-b-sev-5-full-no-fake"
+  log_name: "energy-corruption-b-sev-1"

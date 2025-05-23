@@ -96,26 +96,37 @@ def calculate_accuracy(model_cls, tta_cls, datamodule, config):
 def run_adaptation(config):
     config = load_config(config)
 
+    os.makedirs(f"./logs/{config['source_run']}", exist_ok=True)
+
+    save_dir = f"./logs/{config['source_run']}/{config['tta_config']['log_name']}"
+    os.makedirs(save_dir, exist_ok=True)
+
     hyperparams = {
         'sgld_steps': 10,
         'sgld_lr': 0.03098715690500288,
-        'sgld_std': 0.33756671301297617,
+        'sgld_std': 0.00033756671301297617,
         'reinit_freq': 0.05,
-        'adaptation_steps': 8,
-        'energy_real_weight': 1,
+        'adaptation_steps': 10,
+        'energy_real_weight': 0.8,
         'apply_filter': True,
         'align': False,
         'noise_alpha': 1.1021171479575294,
     }
 
     config['tta_config']['hyperparams'] = hyperparams
+    config['tta_config']['save_dir'] = save_dir
     model_cls, tta_cls, datamodule = setup(config)
-    test_accs, test_acc_logs = calculate_accuracy(model_cls, tta_cls, datamodule, config)
-    # print overall test accuracy
-    print(f"test_acc: {100 * np.mean(test_accs):.2f}")
 
-    with open(f'./logs/{config["source_run"]}_{config["tta_config"]["log_name"]}_accuracy.json', 'w') as f:
-        json.dump(test_acc_logs, f)
+    for seed in range(3):
+        print(f"starting run for seed: {seed}")
+        config['seed'] = seed
+        config['tta_config']['seed'] = seed
+        test_accs, test_acc_logs = calculate_accuracy(model_cls, tta_cls, datamodule, config)
+        # print overall test accuracy
+        print(f"test_acc: {100 * np.mean(test_accs):.2f}")
+
+        with open(f"{save_dir}/accuracy_{seed}.json", 'w') as f:
+            json.dump(test_acc_logs, f)
 
 def tune(config, n_trials=1):
     def objective(trial):
