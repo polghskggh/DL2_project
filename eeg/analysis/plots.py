@@ -36,46 +36,47 @@ def plot_energy_accuracy_loss(log_file_path, individual=False):
 
     for i in range(rows):
         for j in range(cols):
-            subj_id = all_subj_id[i * cols + j] if individual else i * rows + j + 1
-            print(subj_id)
-            ax = axes[i, j]
-            ax.plot(
+            try :
+                subj_id = all_subj_id[i * cols + j] if individual else i * rows + j + 1
+                print(subj_id)
+                ax = axes[i, j]
+                ax.plot(
                 [i for i in range(1, len(info_processed[subj_id]['energy']) + 1)],
                 minmax_norm(np.array(info_processed[subj_id]['energy'])),
                 'o-',
                 label = 'Energy',
                 color = 'C0',
                 linewidth = 2
-            )
-            ax.set_xlabel('Adaptation Steps')
-            ax.set_xticks([i for i in range(1, len(info_processed[subj_id]['accuracy']) + 1)])
-            ax.set_ylabel('Normalized Energy Score', color='C0')
-            ax.tick_params(axis='y', labelcolor='C0')
+                )
+                ax.set_xlabel('Adaptation Steps')
+                ax.set_xticks([i for i in range(1, len(info_processed[subj_id]['accuracy']) + 1)])
+                ax.set_ylabel('Normalized Energy Score', color='C0')
+                ax.tick_params(axis='y', labelcolor='C0')
 
-            ax.plot(
+                ax.plot(
                 [i for i in range(1, len(info_processed[subj_id]['loss']) + 1)],
                 minmax_norm(np.array(info_processed[subj_id]['loss'])),
                 '^--',
                 label='Loss',
                 color='gray',
                 linewidth=1.5
-            )
-
-            ax2 = ax.twinx()
-            #ax3.spines['right'].set_position(('axes', 1.1))  # Offset to right
-            ax2.set_ylim(min(info_processed[subj_id]['loss']),
-                         max(info_processed[subj_id]['loss']))
-            ax2.tick_params(axis='y', labelcolor='gray')
-
-            if max(info_processed[subj_id]['accuracy']) != min(info_processed[subj_id]['accuracy']):
-                ax.plot(
-                    [i for i in range(1, len(info_processed[subj_id]['accuracy']) + 1)],
-                    minmax_norm(np.array(info_processed[subj_id]['accuracy'])),
-                    'x--',
-                    label='Accuracy',
-                    color='brown',
-                    linewidth=2
                 )
+
+                ax2 = ax.twinx()
+                # ax3.spines['right'].set_position(('axes', 1.1))  # Offset to right
+                ax2.set_ylim(min(info_processed[subj_id]['loss']),
+                max(info_processed[subj_id]['loss']))
+                ax2.tick_params(axis='y', labelcolor='gray')
+
+                if max(info_processed[subj_id]['accuracy']) != min(info_processed[subj_id]['accuracy']):
+                    ax.plot(
+                        [i for i in range(1, len(info_processed[subj_id]['accuracy']) + 1)],
+                        minmax_norm(np.array(info_processed[subj_id]['accuracy'])),
+                        'x--',
+                        label='Accuracy',
+                        color='brown',
+                        linewidth=2
+                    )
 
                 ax3 = ax.twinx()
                 ax3.spines['right'].set_position(('axes', 1.1))
@@ -86,11 +87,14 @@ def plot_energy_accuracy_loss(log_file_path, individual=False):
                 ax.text(1.1, -0.05, "Acc", transform=ax.transAxes,
                         rotation=0, ha='left', va='top', color='maroon', fontsize=10)
 
-            energy_diff = max(info_processed[subj_id]['energy']) - min(info_processed[subj_id]['energy'])
-            ax.set_title(f'Subject ID : {subj_id}, ΔEnergy: {energy_diff:.5f}')
-            ax.text(1, -0.05, "Loss", transform=ax.transAxes,
-                    rotation=0, ha='left', va='top', color='gray', fontsize=10)
-            ax.grid(True)
+                energy_diff = max(info_processed[subj_id]['energy']) - min(info_processed[subj_id]['energy'])
+                ax.set_title(f'Subject ID : {subj_id}, ΔEnergy: {energy_diff:.5f}')
+                ax.text(1, -0.05, "Loss", transform=ax.transAxes,
+                        rotation=0, ha='left', va='top', color='gray', fontsize=10)
+                ax.grid(True)
+            except Exception as e:
+                print(f"Error processing subject {subj_id}: {e}")
+
 
 
 
@@ -172,19 +176,18 @@ def plot_energy_per_batch(log_file_path):
     plt.tight_layout()
     plt.show()
 
-log_path = '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/energy_post_no_fake_small_lr.csv'
-plot_energy_per_batch(log_path)
+log_path = '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/energy-corruption-b-sev-5-full-2.csv'
+#plot_energy_per_batch(log_path)
 plot_energy_accuracy_loss(log_path)
-# filepath_lst = [
-#     '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/src-bcic2a_loso_2023-12-04_14-41-13_no_adaptation_accuracy.json',
-#     '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/src-bcic2a_loso_2023-12-04_14-41-13_entropy_minimization_accuracy.json',
-# '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/src-bcic2a_loso_2023-12-04_14-41-13_energy_adaptation_only_batch_accuracy.json',
-# '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/src-bcic2a_loso_2023-12-04_14-41-13_energy_adaptation_adapt_batch_only.json']
-# configs = ['source', 'entropy minimization', 'energy', 'energy adapt ber patch']
-# acc_list = []
-#
-# for filepath in filepath_lst:
-#     with open(filepath, 'r') as f:
-#         acc_list.append(json.load(f))
-#
-# plot_accuracy(acc_list, configs)
+filepath_lst = [
+    '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/src-bcic2b_within_2023-12-04_18-31-55_no_adaptation-b-sev-3_accuracy.json',
+    '/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/src-bcic2b_within_2023-12-04_18-31-55_entropy_min_corrupt-b-sev-3_accuracy.json',
+'/Users/tyme/Desktop/University/Block_5/FOMO/TEA/eeg/logs/src-bcic2b_within_2023-12-04_18-31-55_energy-corruption-b-sev-3-full_accuracy.json']
+configs = ['source', 'entropy minimization', 'energy']
+acc_list = []
+
+for filepath in filepath_lst:
+    with open(filepath, 'r') as f:
+        acc_list.append(json.load(f))
+
+plot_accuracy(acc_list, configs)

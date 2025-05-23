@@ -213,8 +213,4 @@ class EnergyAdaptation(TTAMethod):
                 m.requires_grad_(False)
 
     def forward(self, x, y, train_dataset=None):
-        if self.adapt:
-            return self.forward_and_adapt(x, y, train_dataset=train_dataset)
-        else:
-            print('no adapt')
-            return self.forward_sliding_window(x)
+        return self.forward_and_adapt(x, y, train_dataset=train_dataset)
