@@ -99,16 +99,16 @@ def run_adaptation(config):
 
     hyperparams = {
         'sgld_steps': 26,
-        'sgld_lr': 0.03098715690500288,
-        'sgld_std': 0.0033756671301297617,
+        'sgld_lr': 0.03,
+        'sgld_std': 0.003,
         'reinit_freq': 0.05,
-        'adaptation_steps': 3,
+        'adaptation_steps': 10,
         'energy_real_weight': 0.5,
         'apply_filter': True,
         'align': False,
-        'noise_alpha': 1.1021171479575294,
+        'noise_alpha': 1.1,
     }
-    config['tta_config']['mita'] = True
+    config['tta_config']['mita'] = False
     config['tta_config']['hyperparams'] = hyperparams
     config['tta_config']['optimizer_kwargs']['momentum'] = config['tta_config']['optimizer_kwargs']['beta']
     model_cls, tta_cls, datamodule = setup(config)
@@ -116,8 +116,6 @@ def run_adaptation(config):
     # print overall test accuracy
     print(f"test_acc: {100 * np.mean(test_accs):.2f}")
 
-    with open(f'./logs/{config["source_run"]}_{config["tta_config"]["log_name"]}_accuracy.json', 'w') as f:
-        json.dump(test_acc_logs, f)
 
 def tune(config, n_trials=1):
     def objective(trial):
@@ -174,6 +172,7 @@ if __name__ == "__main__":
     with open(os.path.join(CONFIG_DIR, args.config)) as f:
         config = yaml.safe_load(f)
 
+    config['source_run'] = 'b_within'
     config["online"] = args.online
     if args.tune:
         tune(config, n_trials=args.trials)

@@ -40,8 +40,10 @@ class EnergyAdaptation(TTAMethod):
         self.hyperparams = config['hyperparams']
         self.subject_id = config['subject_id']
         self.batch = 0
-        self.csv_file = f'./logs/{config["log_name"]}.csv'
-        self.adapt= True
+        self.csv_file = f'./adaptation_data.csv'
+        self.model_state_backup = deepcopy(self.energy_model.state_dict())
+        self.optimizer_state_backup = deepcopy(self.optimizer.state_dict())
+        
         header = ['subject_id', 'batch', 'adaptation_step', 'loss', 'energy', 'accuracy']
         if config['initialise_log']:
             with open(self.csv_file, mode='w') as file:
@@ -77,32 +79,12 @@ class EnergyAdaptation(TTAMethod):
         return torch.tensor(pink, dtype=torch.float32)
 
     @staticmethod
-    def _sample_p_0(reinit_freq, replay_buffer, bs, series_length, n_channels, device, y=None, train_dataset=None, noise_alpha=1):
-        if train_dataset is not None:
-            # inds = np.random.randint(0, len(train_dataset), bs)
-            # print(train_dataset[inds][0].shape)
-            # samples = train_dataset[inds][0]
-            inds = np.random.choice(len(train_dataset), bs, replace=False)
-            samples = train_dataset[inds]
-            noise = EnergyAdaptation.generate_pink_noise(bs, series_length, n_channels, alpha=noise_alpha)
-            samples += 0.2 * noise
-            #print(samples.shape)
-            return samples.to(device), inds
+    def _sample_p_0(bs, series_length, n_channels, noise_alpha=1):
+        return EnergyAdaptation.generate_pink_noise(bs, series_length=series_length, n_channels=n_channels, alpha=noise_alpha)
 
-        if len(replay_buffer) == 0:
-            return EnergyAdaptation.generate_pink_noise(bs, series_length=series_length, n_channels=n_channels, alpha=noise_alpha), []
-        buffer_size = len(replay_buffer)
-        inds = torch.randint(0, buffer_size, (bs,))
-        # if cond, convert inds to class conditional inds
 
-        buffer_samples = replay_buffer[inds]
-        random_samples = EnergyAdaptation.generate_pink_noise(bs, series_length=series_length, n_channels=n_channels, alpha=noise_alpha)
-        choose_random = (torch.rand(bs) < reinit_freq).float()[:, None, None, None]
-        samples = choose_random * random_samples + (1 - choose_random) * buffer_samples
-        return samples.to(device), inds
-
-    def sample_q(self, energy_model, sgld_steps, sgld_lr, sgld_std, reinit_freq, adaptation_steps, batch_size, series_length,
-                 n_channels, device, y=None, train_dataset=None, apply_filter=False, align=False, noise_alpha=1,
+    def sample_q(self, sgld_steps, sgld_lr, sgld_std, batch_size, series_length,
+                 n_channels, device, y=None, train_dataset=None, apply_filter=False, noise_alpha=1,
                  sample_init=True, **kwargs):
         """this func takes in replay_buffer now so we have the option to sample from
         scratch (i.e. replay_buffer==[]).  See test_wrn_ebm.py for example.
@@ -113,15 +95,10 @@ class EnergyAdaptation(TTAMethod):
         bs = batch_size if y is None else y.size(0)
         # generate initial samples and buffer inds of those samples (if buffer is used)
         if sample_init:
-            init_sample, buffer_inds = self._sample_p_0(
-                reinit_freq=reinit_freq,
-                replay_buffer=self.replay_buffer,
+            init_sample = self._sample_p_0( 
                 bs=bs,
                 series_length=series_length,
-                n_channels=n_channels,
-                device=device,
-                y=y,
-                train_dataset=train_dataset,
+                n_channels=n_channels,  
                 noise_alpha=noise_alpha,
             )
         else:
@@ -131,7 +108,7 @@ class EnergyAdaptation(TTAMethod):
         # sgld
 
         for k in range(sgld_steps):
-            f_prime = torch.autograd.grad(energy_model(x_k, y=y)[0].sum(), [x_k], retain_graph=True)[0]
+            f_prime = torch.autograd.grad(self.energy_model(x_k, y=y)[0].sum(), [x_k], retain_graph=True)[0]
             x_k.data -= sgld_lr * f_prime + sgld_std * self.generate_pink_noise(bs, series_length, n_channels, alpha=noise_alpha).to(self.device)
             # self.energy_model.train()
         final_samples = x_k.detach()
@@ -141,64 +118,67 @@ class EnergyAdaptation(TTAMethod):
             l_freq, h_freq = preprocess_config["low_cut"], preprocess_config["high_cut"]
 
             if l_freq is not None or h_freq is not None:
-                final_samples = filter_data(final_samples.cpu().numpy().astype(np.float64()), sfreq=preprocess_config["sfreq"], l_freq=l_freq, h_freq=h_freq, verbose=False)
-                final_samples = torch.tensor(final_samples, dtype=torch.float32).to(device)
-
-        if align and preprocess_config is not None:
-            final_samples = OnlineAlignment.align_data(
-                final_samples, alignment=preprocess_config.get("alignment"), averaging_method="equal",
-            )
-
-        # update replay buffer
-        if train_dataset is None and len(self.replay_buffer) > 0:
-            self.replay_buffer[buffer_inds] = final_samples.cpu()
+                final_samples = filter_data(final_samples.cpu().numpy().astype(np.float64()), sfreq=preprocess_config["sfreq"], 
+                                            l_freq=l_freq, h_freq=h_freq, verbose=False)
+                final_samples = torch.tensor(final_samples, dtype=torch.float32).to(device) 
+            
         return final_samples, init_samples.detach()
 
-    def adapt_model(self, x, train_dataset, model):
+    def adapt_model(self, x, adaptation_steps, y=None):
         batch_size = x.shape[0]
         n_channels = x.shape[1]
         series_length = x.shape[2]
         device = x.device
-        for step in range(self.hyperparams['adaptation_steps']):
-            x_fake, _ = self.sample_q(model, **self.hyperparams, batch_size=batch_size, series_length=series_length,
-                                      n_channels=n_channels, device=device, y=None, train_dataset=train_dataset)
 
-            # forward
-            out_real = model(x)
+        logs = []
+
+        alpha = self.hyperparams['energy_real_weight']
+
+        for step in range(adaptation_steps):
+            if alpha < 1:
+                x_fake, _ = self.sample_q(**self.hyperparams, batch_size=batch_size, series_length=series_length,
+                                          n_channels=n_channels, device=device, y=None)
+
+                # forward
+                energy_fake = self.energy_model(x_fake)[0].mean()
+            else:
+                energy_fake = 0
+
+            out_real = self.energy_model(x)
             energy_real = out_real[0].mean()
-            energy_fake = model(x_fake)[0].mean()
 
             # adapt
-            self.optimizer.zero_grad()
-
-            alpha = self.hyperparams['energy_real_weight']
             loss = alpha * energy_real - (1 - alpha) * energy_fake
 
             loss.backward()
             self.optimizer.step()
-        return model
+            self.optimizer.zero_grad()
 
-            # if y is not None:
-            #     outputs = self.energy_model.classify(x)
-            #     accuracy = (outputs.argmax(-1).cpu() == y).float().numpy().mean()
-            #     logs.append((self.subject_id, self.batch, step, loss.item(), energy_real.item(), accuracy))
-
-    def adapt_data(self, x, model):
+            if y is not None:
+                outputs = self.energy_model.classify(x)
+                accuracy = (outputs.argmax(-1).cpu() == y).float().numpy().mean()
+                logs.append((loss.item(), energy_real.item(), accuracy.item()))
+        return logs
+ 
+    def adapt_data(self, x):
         batch_size = x.shape[0]
         n_channels = x.shape[1]
         series_length = x.shape[2]
         device = x.device
         for step in range(self.hyperparams['adaptation_steps']):
-            x_fake, _ = self.sample_q(model, **self.hyperparams, batch_size=batch_size, series_length=series_length,
+            x_fake, _ = self.sample_q(**self.hyperparams, batch_size=batch_size, series_length=series_length,
                                       n_channels=n_channels, device=device, y=None, train_dataset=x, sample_init=False)
         return x_fake
-
+    
+    def reset(self):
+        self.energy_model.load_state_dict(self.model_state_backup, strict=True)
+        self.optimizer.load_state_dict(self.optimizer_state_backup)
+    
     @torch.enable_grad()  # ensure grads in possible no grad context for testing
     def forward_and_adapt(self, x, y=None, train_dataset=None):
         """Forward and adapt model on batch of data.
         Measure entropy of the model prediction, take gradients, and update params.
         """
-
         if self.config.get("alignment", False):
             # align data
             x = OnlineAlignment.align_data(
@@ -206,28 +186,25 @@ class EnergyAdaptation(TTAMethod):
                 self.config.get("averaging_method", "equal"),
                 self.config.get("align_alpha", None))
 
-        logs = []
         if self.mita:
-            model_backup = deepcopy(self.energy_model)
-            optimizer_backup = deepcopy(self.optimizer.state_dict())
-            temp = self.hyperparams['adaptation_steps']
-            self.hyperparams['adaptation_steps'] *= 2
-            data_adaptation_model = self.adapt_model(x, train_dataset, model_backup)
-            self.hyperparams['adaptation_steps'] = temp
-            self.optimizer.load_state_dict(optimizer_backup)
+            self.adapt_model(x, self.hyperparams['adaptation_steps'])
+            stable_energy_model_dict = deepcopy(self.energy_model.state_dict())
+            
+            self.reset()
+            self.adapt_model(x, self.hyperparams['adaptation_steps'] * 2)
 
-            self.energy_model = self.adapt_model(x, train_dataset, self.energy_model)
-
-            x = self.adapt_data(x, data_adaptation_model)
+            self.energy_model.load_state_dict(stable_energy_model_dict, strict=True)
+            x = self.adapt_data(x)
         else:
-            self.energy_model = self.adapt_model(x, train_dataset, self.energy_model)
+            logs = self.adapt_model(x, self.hyperparams['adaptation_steps'], y)
+
+        with open(self.csv_file, mode='a') as file:
+            writer = csv.writer(file)
+            for step, (loss, energy_real, accuracy) in enumerate(logs):
+                writer.writerows([(self.subject_id, self.batch, step, loss, energy_real, accuracy)])
+        self.batch += 1
 
         outputs = self.energy_model.classify(x)
-        if len(logs) > 0:
-            with open(self.csv_file, mode='a') as file:
-                writer = csv.writer(file)
-                writer.writerows(logs)
-        self.batch += 1
         return outputs
 
     def configure_model(self):
@@ -241,11 +218,9 @@ class EnergyAdaptation(TTAMethod):
                 m.running_mean = None
                 m.running_var = None
             else:
-                m.requires_grad_(False)
+                # m.requires_grad_(False)
+                pass
 
-    def forward(self, x, y, train_dataset=None):
-        if self.adapt:
-            return self.forward_and_adapt(x, y, train_dataset=train_dataset)
-        else:
-            print('no adapt')
-            return self.forward_sliding_window(x)
+    def forward(self, x, y):
+        self.reset()
+        return self.forward_and_adapt(x, y)
