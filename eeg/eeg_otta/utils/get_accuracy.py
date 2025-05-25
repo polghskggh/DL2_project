@@ -17,9 +17,7 @@ def get_accuracy(model: nn.Module, data_loader: DataLoader, device: torch.device
     with torch.no_grad():
         for batch in tqdm(data_loader):
             x, y = batch
-            x = corrupt(x, severity=5)
             output = torch.softmax(model(x.to(device), y), -1)
-
             outputs.append(output)
             labels.append(y)
 

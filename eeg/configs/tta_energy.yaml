@@ -2,7 +2,7 @@ source_run: "src-bcic2a_loso_2023-12-04_14-40-57"
 tta_method: "energy_adaptation"
 continual: false
 tta_config:
-  alignment: 'riemann' # [False, "euclidean", "riemann"]
+  alignment: False # [False, "euclidean", "riemann"]
   averaging_method: "ema"  # ["equal", "linear", "ema"]
   align_alpha: 0.1
   buffer_length: 32

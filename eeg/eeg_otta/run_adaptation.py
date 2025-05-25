@@ -66,7 +66,7 @@ def calculate_accuracy(model_cls, tta_cls, datamodule, config):
         # load checkpoint
         ckpt_path = os.path.join(CHECKPOINT_PATH, config["source_run"],
                                  str(config["subject_ids"][0]) if config['train_individual'] else str(subject_id),
-                                 "model.ckpt" if config['train_individual'] else "model-v1.ckpt")
+                                 "model.ckpt" if config['train_individual'] else "model.ckpt")
         model = model_cls.load_from_checkpoint(ckpt_path, map_location=device)
 
         # set subject_id
@@ -98,12 +98,12 @@ def run_adaptation(config):
     config = load_config(config)
 
     hyperparams = {
-        'sgld_steps': 26,
-        'sgld_lr': 0.03,
-        'sgld_std': 0.003,
+        'sgld_steps': 10,
+        'sgld_lr': 0.01,
+        'sgld_std': 0.001,
         'reinit_freq': 0.05,
         'adaptation_steps': 10,
-        'energy_real_weight': 0.5,
+        'energy_real_weight': 1,
         'apply_filter': True,
         'align': False,
         'noise_alpha': 1.1,
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     with open(os.path.join(CONFIG_DIR, args.config)) as f:
         config = yaml.safe_load(f)
 
-    config['source_run'] = 'b_within'
+    config['source_run'] = 'a_loso'
     config["online"] = args.online
     if args.tune:
         tune(config, n_trials=args.trials)

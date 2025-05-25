@@ -109,8 +109,9 @@ class EnergyAdaptation(TTAMethod):
 
         for k in range(sgld_steps):
             f_prime = torch.autograd.grad(self.energy_model(x_k, y=y)[0].sum(), [x_k], retain_graph=True)[0]
-            x_k.data -= sgld_lr * f_prime + sgld_std * self.generate_pink_noise(bs, series_length, n_channels, alpha=noise_alpha).to(self.device)
-            # self.energy_model.train()
+            noise = self.generate_pink_noise(bs, series_length, n_channels, alpha=noise_alpha)
+            # noise = torch.randn_like(x_k)
+            x_k.data -= sgld_lr * f_prime + sgld_std * noise.to(self.device)
         final_samples = x_k.detach()
 
         preprocess_config = self.config.get("preprocessing")
@@ -218,8 +219,8 @@ class EnergyAdaptation(TTAMethod):
                 m.running_mean = None
                 m.running_var = None
             else:
-                # m.requires_grad_(False)
-                pass
+                m.requires_grad_(False)
+                # pass
 
     def forward(self, x, y):
         self.reset()
