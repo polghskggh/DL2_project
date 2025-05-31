@@ -12,11 +12,11 @@ tta_config:
     beta: 0.9
     weight_decay: 3.2218508637870526e-05
   hyperparams:
-    sgld_steps: 1
+    sgld_steps: 26
     sgld_lr: 0.017975217955105576
     sgld_std: 0.01115193577977435
     reinit_freq: 0.05
-    adaptation_steps : 1
+    adaptation_steps : 8
     energy_real_weight : 0.5172643563168701
     apply_filter : true
     align : false
