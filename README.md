@@ -59,9 +59,12 @@ Run the following commands:
 ### Running EEG-TEA
 Run [EEG_TEA.ipynb](eeg/EEG_TEA.ipynb)
 
-### Experiment setup 
-Set the following parameters in the notebook to reproduce the experiments.
+Set the parameters stated below for each experiment to reproduce the results.
+
 #### Experiment 1: Cross-subject adaptation
+
+###### Experiment setup
+
 ```python
 dataset_name = '2a'
 dataset_setup = 'loso' 
@@ -70,11 +73,18 @@ corruption_level = None
 
 #### Experiment 2: Corruption adaptation
 
+###### Experiment setup
 ```python
 dataset_name = '2b'
 dataset_setup = 'within' 
 corruption_level = 1  # in [1, 2, 3, 4, 5]
-```
+```d
+| Severity | 1        | 2       | 3         | 4       | 5          | Avg. (Std.)     |
+|----------|----------|---------|-----------|---------|------------|-----------------|
+| Source   | 0.856 (0.000) | 0.851 (0.006) | 0.655 (0.008) | 0.573 (0.002) | 0.529 (0.004) | 0.693 (0.004)   |
+| Entropy  | 0.867 (0.000) | 0.863 (0.003) | 0.663 (0.007) | 0.579 (0.008) | 0.533 (0.007) | 0.701 (0.005)   |
+| TEA      | **0.877 (0.001)** | **0.871 (0.001)** | **0.685 (0.008)** | **0.586 (0.007)** | **0.537 (0.005)** | **0.710 (0.004)** |
+
 
 # Conclusion
 
