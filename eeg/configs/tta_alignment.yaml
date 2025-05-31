@@ -1,6 +1,6 @@
 source_run: # Insert your checkpoint dir here
 tta_method: "alignment"
 tta_config:
-  alignment: "euclidean"  # ["euclidean", "riemann"]
+  alignment: "riemann"  # ["euclidean", "riemann"]
   averaging_method: "equal"  # ["equal", "linear", "ema"]
   buffer_length: 64

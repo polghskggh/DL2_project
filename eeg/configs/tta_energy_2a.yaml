@@ -1,0 +1,25 @@
+source_run: "a_loso"
+tta_method: "energy_adaptation"
+continual: false
+tta_config:
+  alignment: False # [False, "euclidean", "riemann"]
+  averaging_method: "ema"  # ["equal", "linear", "ema"]
+  align_alpha: 0.1
+  buffer_length: 32
+  optimizer: "Adam"
+  optimizer_kwargs:
+    lr: 0.0013180192350539374
+    beta: 0.9
+    weight_decay: 3.2218508637870526e-05
+  hyperparams:
+    sgld_steps: 1
+    sgld_lr: 0.017975217955105576
+    sgld_std: 0.01115193577977435
+    reinit_freq: 0.05
+    adaptation_steps : 1
+    energy_real_weight : 0.5172643563168701
+    apply_filter : true
+    align : false
+    noise_alpha : 1.050088336278543
+    bn_only : true
+  log_name: "energy"

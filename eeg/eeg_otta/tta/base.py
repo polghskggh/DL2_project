@@ -15,13 +15,13 @@ class TTAMethod(nn.Module):
         self.input_buffer = None
         self.buffer_length = self.config.get("buffer_length")
         self.buffer_counter = 0
-
+        self.hyperparams = config.get('hyperparams', {})
         self.configure_model()
         self.params, param_names = self.collect_params()
         self.optimizer = self.setup_optimizer() if len(self.params) > 0 else None
         self.print_amount_trainable_params()
 
-    def forward(self, x):
+    def forward(self, x, *args):
 
         if x.shape[0] == 1:  # Only single-sample test-time adaptation allowed
             # add sample to buffer, replace the oldest sample if buffer is full
@@ -76,6 +76,11 @@ class TTAMethod(nn.Module):
                                     lr=self.config["optimizer_kwargs"]["lr"],
                                     betas=(self.config["optimizer_kwargs"]["beta"], 0.999),
                                     weight_decay=self.config["optimizer_kwargs"]["weight_decay"])
+        elif self.config["optimizer"] == 'SGD':
+            return torch.optim.SGD(self.params,
+                                   lr=self.config["optimizer_kwargs"]["lr"],
+                                   momentum=self.config["optimizer_kwargs"]["momentum"],
+                                   weight_decay=self.config["optimizer_kwargs"]["weight_decay"])
         else:
             raise NotImplementedError
 
