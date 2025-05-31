@@ -86,7 +86,7 @@ def setup_config(dataset_name, dataset_setup, adaptation_method, seed, corruptio
     save_dir = os.path.join(
         LOG_DIR,
         config['source_run'],
-        f"{config['tta_config']['log_name']}{'_' + corruption_level if corruption_level else ''}"
+        f"{config['tta_config']['log_name']}{'_' + str(corruption_level) if corruption_level else ''}"
     )
 
     os.makedirs(save_dir, exist_ok=True)

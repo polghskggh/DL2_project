@@ -6,7 +6,7 @@ model_kwargs:
   dropout: 0.5
   dropout_inp: 0.5
   input_window_samples: 1000
-  label_smoothing: 0.4
+  label_smoothing: 0.0
   lr: 0.001
   n_channels: 3
   n_classes: 2
@@ -21,9 +21,9 @@ model_kwargs:
   temp_filter_length: 15
   temp_filter_length_inp: 25
   warmup_epochs: 20
-  weight_decay: 0.001
+  weight_decay: 0.0
 preprocessing:
-  alignment: riemann
+  alignment: false
   batch_size: 64
   high_cut: 40
   low_cut: 0
@@ -32,4 +32,3 @@ preprocessing:
   stop: -0.5
 seed: 0
 subject_ids: all
-train_individual: false

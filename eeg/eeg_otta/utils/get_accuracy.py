@@ -25,13 +25,12 @@ def corrupt(x, severity=5):
 def get_accuracy(model: nn.Module, data_loader: DataLoader, device: torch.device):
     outputs, labels = [], []
     with torch.no_grad():
-        for step in range(getattr(model, 'hyperparams', {}).get('adaptation_steps', 1)):
+        for step in tqdm(range(getattr(model, 'hyperparams', {}).get('adaptation_steps', 1))):
             if isinstance(getattr(model, 'step', 'false'), int):
                 model.step += 1
             model.adapt = True
-            for batch in tqdm(data_loader):
+            for batch in data_loader:
                 x, y = batch
-                #x = corrupt(x, severity=5)
                 output = torch.softmax(model(x.to(device), y), -1)
 
             model.adapt = False
@@ -39,7 +38,6 @@ def get_accuracy(model: nn.Module, data_loader: DataLoader, device: torch.device
                 model.batch = 0
             for batch in data_loader:
                 x, y = batch
-                #x = corrupt(x, severity=5)
                 output = torch.softmax(model(x.to(device), y), -1)
 
                 if step == getattr(model, 'hyperparams', {}).get('adaptation_steps', 1) - 1:
