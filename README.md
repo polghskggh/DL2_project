@@ -51,13 +51,13 @@ noise, results in the generation of more realistic samples, leading to improved 
 ## Results 
 
 ### Installation
-- Run the following commands:
+Run the following commands:
   ```bash
   cd eeg
   pip install .
-
+````
 ### Running EEG-TEA
-- Run [EEG_TEA.ipynb](eeg/EEG_TEA.ipynb)
+Run [EEG_TEA.ipynb](eeg/EEG_TEA.ipynb)
 
 ### Experiment setup 
 Set the following parameters in the notebook to reproduce the experiments.
