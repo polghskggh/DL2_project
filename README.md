@@ -63,7 +63,6 @@ Set the parameters stated below for each experiment to reproduce the results.
 
 #### Experiment 1: Cross-subject adaptation
 
-###### Experiment setup
 
 ```python
 dataset_name = '2a'
@@ -73,7 +72,6 @@ corruption_level = None
 
 #### Experiment 2: Corruption adaptation
 
-###### Experiment setup
 ```python
 dataset_name = '2b'
 dataset_setup = 'within' 
