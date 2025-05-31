@@ -49,7 +49,6 @@ class BCICIV2aWithinSubject(BaseDataModule):
         # corrupt data
         if self.corruption_level:
             print('corrupting data level:', self.corruption_level)
-            X = corrupt(X, severity=self.corruption_level)
             X_test = corrupt(X_test, severity=self.corruption_level)
 
         # align data
@@ -102,7 +101,6 @@ class BCICIV2bWithinSubject(BaseDataModule):
         # corrupt data
         if self.corruption_level:
             print('corrupting data level:', self.corruption_level)
-            X = corrupt(X, severity=self.corruption_level)
             X_test = corrupt(X_test, severity=self.corruption_level)
 
         # scale and align data

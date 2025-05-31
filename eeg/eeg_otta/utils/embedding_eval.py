@@ -61,16 +61,22 @@ def reduce_embedding(model, train_data, test_data, method='pca'):
 def plot_embeddings(model, train_data, test_data, method='pca'):
     colors = ['red', 'blue', 'green', 'orange']
     markers = ['x', 'o']
+    split_idx_map = {
+        0: 'test',
+        1: 'train'
+    }
+
     dataset = reduce_embedding(model, train_data, test_data, method=method)
     for split in np.unique(dataset['distribution']):
         idxs = dataset['distribution'] == split
         embeddings = dataset['embeddings'][idxs]
         labels = dataset['labels'][idxs]
         labels = [colors[label] for label in labels]
-        plt.scatter(embeddings[:, 0], embeddings[:, 1], c=labels, marker=markers[int(split)], alpha=0.2)
+        plt.scatter(embeddings[:, 0], embeddings[:, 1], c=labels, marker=markers[int(split)], alpha=0.2, label=split_idx_map[split])
 
     plt.title(f"{method} visualization of the last embedding")
     plt.xlabel('1st component')
     plt.ylabel('2nd component')
+    plt.legend()
     plt.grid(True)
     plt.show()
