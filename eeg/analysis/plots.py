@@ -3,10 +3,14 @@ import pandas as pd
 import numpy as np
 import json
 from collections import defaultdict
+import os
 
-def plot_energy_accuracy_loss(log_file_path, individual=False):
-
-    df = pd.read_csv(log_file_path)
+def plot_energy_accuracy_loss(save_dir, individual=False):
+    log_file_path = [f for f in os.listdir(save_dir) if f.startswith('adapt_info')]
+    if not log_file_path:
+        raise ValueError('No log file found')
+    log_file_path = log_file_path[0]
+    df = pd.read_csv(os.path.join(save_dir, log_file_path))
     info_processed = {}
 
 
@@ -52,7 +56,6 @@ def plot_energy_accuracy_loss(log_file_path, individual=False):
         for j in range(cols):
             try :
                 subj_id = all_subj_id[i * cols + j] if individual else i * rows + j + 1
-                print(subj_id)
                 ax = axes[i, j]
                 ax.plot(
                 [i for i in range(1, len(info_processed[subj_id]['energy']) + 1)],
@@ -109,14 +112,22 @@ def plot_energy_accuracy_loss(log_file_path, individual=False):
             except Exception as e:
                 print(f"Error processing subject {subj_id}: {e}")
 
-
-
-
     plt.tight_layout()
     plt.show()
 
 
-def plot_accuracy(acc_list, configs):
+def plot_accuracy(save_dirs):
+
+    acc_list = []
+    configs = [config for config in save_dirs.keys()]
+
+    for save_dir in save_dirs.values():
+        cur_acc = []
+        file_paths = [f for f in os.listdir(save_dir) if f.startswith('acc')]
+        for path in file_paths:
+            with open(os.path.join(save_dir, path), 'r') as f:
+                cur_acc.append(json.load(f))
+        acc_list.append(cur_acc)
 
     all_subj_ids = sorted({subj_id for accs in acc_list for acc in accs for subj_id in acc})
     x = np.arange(len(all_subj_ids))  # the label locations
@@ -126,17 +137,23 @@ def plot_accuracy(acc_list, configs):
 
     for i, (accs, config) in enumerate(zip(acc_list, configs)):
         acc_vals = defaultdict(list)
+        acc_per_run = []
         for acc in accs:
+            cur_acc = []
             for subj_id in all_subj_ids:
                 val = acc.get(subj_id, np.nan)
                 if isinstance(val, dict):
                     acc_vals[subj_id].append(val.get('test_acc', np.nan))
+                    cur_acc.append(val.get('test_acc', np.nan))
                 else:
                     acc_vals[subj_id].append(val)
+                    cur_acc.append(val)
+            acc_per_run.append(np.mean(cur_acc))
+
         val_out = []
         for val_acc in acc_vals.values():
             val_out.append(np.mean(val_acc))
-        print(f'avg acc {config} : {np.nanmean(val_out)}')
+        print(f'avg acc {config} : {np.mean(acc_per_run)} ± {np.std(acc_per_run)}')
         plt.bar(x + i * width, val_out, width, label=config)
 
     plt.xlabel('Subj id')
@@ -192,21 +209,3 @@ def plot_energy_per_batch(log_file_path):
             ax.grid()
     plt.tight_layout()
     plt.show()
-
-model = 'b_within'
-adaptation = 'energy-corruption-b-sev-1'
-log_path = f'./logs/{model}/{adaptation}/adapt_info_0.csv'
-plot_energy_accuracy_loss(log_path)
-
-configs = ['source', 'entropy minimization', 'energy']
-adaptations = ["no_adaptation-b-sev-1", "entropy_min_corrupt-b-sev-1", "energy-corruption-b-sev-1"]
-acc_list = []
-for adaptation in adaptations:
-    cur_acc = []
-    for i in range(3):
-        path = f'./logs/{model}/{adaptation}/accuracy_{i}.json'
-        with open(path, 'r') as f:
-            cur_acc.append(json.load(f))
-    acc_list.append(cur_acc)
-
-plot_accuracy(acc_list, configs)

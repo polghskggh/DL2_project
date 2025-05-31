@@ -13,6 +13,7 @@ from ..utils.load_bcic import load_bcic
 class BCICIV2aWithinSubject(BaseDataModule):
     all_subject_ids = list(range(1, 10))
     class_names = ["feet", "hand(L)", "hand(R)", "tongue"]
+    corruption_level = None
 
     def __init__(self, preprocessing_dict: dict, subject_ids: list[int]):
         super(BCICIV2aWithinSubject, self).__init__(preprocessing_dict, subject_ids)
@@ -36,6 +37,21 @@ class BCICIV2aWithinSubject(BaseDataModule):
             [run.windows.load_data()._data for run in test_dataset.datasets], axis=0)
         y_test = np.concatenate([run.y for run in test_dataset.datasets], axis=0)
 
+        def corrupt(x, severity=5):
+            stds = [0.1, 1, 10, 20, 40]
+            std = stds[severity - 1]
+
+            noise = np.random.randn(*x.shape) * std
+            corrupted = x + noise
+
+            return corrupted
+
+        # corrupt data
+        if self.corruption_level:
+            print('corrupting data level:', self.corruption_level)
+            X = corrupt(X, severity=self.corruption_level)
+            X_test = corrupt(X_test, severity=self.corruption_level)
+
         # align data
         X, X_test = align(self.preprocessing_dict["alignment"], X, X_test)
 
@@ -47,6 +63,7 @@ class BCICIV2aWithinSubject(BaseDataModule):
 class BCICIV2bWithinSubject(BaseDataModule):
     all_subject_ids = list(range(1, 10))
     class_names = ["hand(L)", "hand(R)"]
+    corruption_level = None
 
     def __init__(self, preprocessing_dict: dict, subject_ids: list[int]):
         super(BCICIV2bWithinSubject, self).__init__(preprocessing_dict, subject_ids)
@@ -73,6 +90,21 @@ class BCICIV2bWithinSubject(BaseDataModule):
         y_test = np.concatenate([run.y for test_dataset in test_datasets for run in
                                  test_dataset.datasets], axis=0)
 
+        def corrupt(x, severity=5):
+            stds = [0.1, 1, 10, 20, 40]
+            std = stds[severity - 1]
+
+            noise = np.random.randn(*x.shape) * std
+            corrupted = x + noise
+
+            return corrupted
+
+        # corrupt data
+        if self.corruption_level:
+            print('corrupting data level:', self.corruption_level)
+            X = corrupt(X, severity=self.corruption_level)
+            X_test = corrupt(X_test, severity=self.corruption_level)
+
         # scale and align data
         X, X_test = align(self.preprocessing_dict["alignment"], X, X_test)
 
@@ -88,6 +120,7 @@ class BCICIV2aLOSO(BaseDataModule):
     class_names = ["feet", "hand(L)", "hand(R)", "tongue"]
     prepare_called = False
     train_individual = False
+    corruption_level = None
 
     def __init__(self, preprocessing_dict: dict, subject_ids: list[int]):
         super(BCICIV2aLOSO, self).__init__(preprocessing_dict, subject_ids)
@@ -180,6 +213,20 @@ class BCICIV2aLOSO(BaseDataModule):
                              train_domains=train_domains, test_domains=val_domains)
             _, X_test = align(self.preprocessing_dict["alignment"], X_test_T, X_test)
 
+            def corrupt(x, severity=5):
+                stds = [0.1, 1, 10, 20, 40]
+                std = stds[severity - 1]
+
+                noise = np.random.randn(*x.shape) * std
+                corrupted = x + noise
+
+                return corrupted
+
+            # corrupt data
+            if self.corruption_level:
+                print('corrupting data level:', self.corruption_level)
+                X_test = corrupt(X_test, severity=self.corruption_level)
+
             # make datasets
             self.train_dataset = BaseDataModule._make_tensor_dataset(X, y)
             self.val_dataset = BaseDataModule._make_tensor_dataset(X_val, y_val)
@@ -220,6 +267,7 @@ class BCICIV2bLOSO(BaseDataModule):
     all_subject_ids = list(range(1, 10))
     class_names = ["hand(L)", "hand(R)"]
     prepare_called = False
+    corruption_level = None
 
     def __init__(self, preprocessing_dict: dict, subject_ids: list[int]):
         super(BCICIV2bLOSO, self).__init__(preprocessing_dict, subject_ids)
@@ -282,6 +330,20 @@ class BCICIV2bLOSO(BaseDataModule):
         X, X_val = align(self.preprocessing_dict["alignment"], X, X_val,
                          train_domains=train_domains, test_domains=val_domains)
         _, X_test = align(self.preprocessing_dict["alignment"], X_test_cal, X_test)
+
+        def corrupt(x, severity=5):
+            stds = [0.1, 1, 10, 20, 40]
+            std = stds[severity - 1]
+
+            noise = np.random.randn(*x.shape) * std
+            corrupted = x + noise
+
+            return corrupted
+
+        # corrupt data
+        if self.corruption_level:
+            print('corrupting data level:', self.corruption_level)
+            X_test = corrupt(X_test, severity=self.corruption_level)
 
         # make datasets
         self.train_dataset = BaseDataModule._make_tensor_dataset(X, y)

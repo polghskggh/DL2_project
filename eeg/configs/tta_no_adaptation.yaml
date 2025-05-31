@@ -1,4 +1,4 @@
-source_run: "b_within"
+source_run: "a_loso"
 tta_method: "no_adaptation"
 continual: false
 tta_config:
@@ -11,4 +11,4 @@ tta_config:
     lr: 0.0005
     beta: 0.9
     weight_decay: 0.0
-  log_name: "no_adaptation-b-sev-1"
+  log_name: "no_adaptation"

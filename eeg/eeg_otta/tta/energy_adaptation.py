@@ -210,7 +210,7 @@ class EnergyAdaptation(TTAMethod):
                 m.running_mean = None
                 m.running_var = None
             else:
-                m.requires_grad_(False)
+                m.requires_grad_(not self.hyperparams.get('bn_only', True))
 
     def forward(self, x, y, train_dataset=None):
         return self.forward_and_adapt(x, y, train_dataset=train_dataset)

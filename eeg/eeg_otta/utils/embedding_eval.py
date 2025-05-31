@@ -2,7 +2,6 @@ import torch
 from tqdm import tqdm
 import numpy as np
 
-from eeg_otta.utils.get_accuracy import corrupt
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
@@ -14,7 +13,7 @@ def forward(tea_model, x):
     energy = -torch.logsumexp(logits, dim=-1)
     return energy, logits, embeds
 
-def prepare_labeled_data(tea_model, data_loader, do_corrupt=False):
+def prepare_labeled_data(tea_model, data_loader):
     aux = {
         'logits': [],
         'energies': [],
@@ -25,8 +24,6 @@ def prepare_labeled_data(tea_model, data_loader, do_corrupt=False):
     with torch.no_grad():
         for sample in tqdm(data_loader):
             x, y = sample
-            if do_corrupt:
-                x = corrupt(x, 0)
 
             energy, output, embed = forward(tea_model, x)
             prediction = torch.argmax(torch.softmax(output, -1), -1)

@@ -8,7 +8,18 @@ tta_config:
   buffer_length: 32
   optimizer: "Adam"
   optimizer_kwargs:
-    lr: 0.001
+    lr: 0.00001
     beta: 0.9
     weight_decay: 0.0
-  log_name: "energy-corruption-b-sev-1"
+  hyperparams:
+    sgld_steps: 10
+    sgld_lr: 0.03098715690500288
+    sgld_std: 0.0033756671301297617
+    reinit_freq: 0.05
+    adaptation_steps: 8
+    energy_real_weight: 0.8
+    apply_filter: true
+    align: false
+    noise_alpha: 1.050088336278543
+    bn_only: false
+  log_name: "energy"

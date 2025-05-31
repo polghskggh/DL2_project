@@ -15,7 +15,7 @@ class TTAMethod(nn.Module):
         self.input_buffer = None
         self.buffer_length = self.config.get("buffer_length")
         self.buffer_counter = 0
-
+        self.hyperparams = config.get('hyperparams', {})
         self.configure_model()
         self.params, param_names = self.collect_params()
         self.optimizer = self.setup_optimizer() if len(self.params) > 0 else None
