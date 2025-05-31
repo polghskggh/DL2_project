@@ -61,7 +61,6 @@ Run the following commands:
 ### Running EEG-TEA
 Run [EEG_TEA.ipynb](eeg/EEG_TEA.ipynb)
 
-### Experiment setup 
 Set the following parameters in the notebook to reproduce the experiments.
 #### Experiment 1: Cross-subject adaptation
 ```python
